@@ -3,5 +3,5 @@ imagemitsuba/
 imagethree/
 
 #result remove
-resultmitsuba/
-resultthree/
+#resultmitsuba/
+#resultthree/
