@@ -1,0 +1,7 @@
+#image remove
+imagemitsuba/
+imagethree/
+
+#result remove
+#resultmitsuba/
+#resultthree/
