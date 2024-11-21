@@ -35,7 +35,7 @@ hold off;
 
 xlabel('Exp3(VR)');
 ylabel('Old(2D)');
-title(sprintf('%s: Coef = %.2f,Slope = %.2f', string(MatNames2(idx1)),coef_list(idx1),slop_list(idx1)));
+title(sprintf('HDR: Coef = %.2f,Slope = %.2f', coef_list(idx1),slop_list(idx1)));
 
 plotname = sprintf('%s/%s_Coef.jpg',ana_result,Filename);
 saveas(gcf, plotname);
@@ -66,7 +66,7 @@ set(gca,'FontSize',6)
 
 xlabel('HDR'); 
 ylabel('Normalized z-score');
-title(sprintf('%s: Coef = %.2f,Slope = %.2f', string(MatNames2(idx1)),coef_list(idx1),slop_list(idx1)));
+title(sprintf('HDR: Coef = %.2f,Slope = %.2f', coef_list(idx1),slop_list(idx1)));
 legend([bar_exp3, bar_old], {'VR', '2D'}, 'Location', 'southeast','Orientation','vertical');
 legend('boxoff');
 grid on;
