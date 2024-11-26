@@ -6,7 +6,8 @@ Datapath = "./data/";
 MatNames = {'cu0025', 'cu0129', 'pla0075', 'pla0225'};
 MatNames1 = {'cu_0.025', 'cu_0.129', 'pla_0.075', 'pla_0.225'};
 MatNames2 = {'cu-0.025', 'cu-0.129', 'pla-0.075', 'pla-0.225'};
-HDRNames3 = [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30];
+HDRNum2 = [2,4,7,8,9,11,12,18,21,22,23,24,25,28,29];
+HDRNum1 = [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30];
 HDRlNames2 = [19, 39, 78, 80, 102, 125, 152, 203, 226, 227, 230, 232, 243, 278, 281];
 HDRNames = [5,19,34,39,42,43,78,80,102,105,125,152,164,183,198,201,202,203,209,222,226,227,230,232,243,259,272,278,281,282];
 ShapeNames = {'sphere','bunny','dragon','boardA','boardB','boardC'};
@@ -49,7 +50,7 @@ err1 = err_array1(:,idx1);
 bar2 = array2(:,idx1);
 err2 = err_array2(:,idx1);
 bar_width = 0.35;
-x = 1:length(HDRNames);
+x = 1:length(HDRNum2);
 
 hold on;
 bar_exp3 = bar(x + bar_width/2, bar1, bar_width, 'FaceColor', 'b', 'DisplayName', '3D'); 
@@ -60,14 +61,14 @@ hold off;
 
 ylim([-1.2 1.2]);
 set(gca, 'XTick', x);
-xticklabels(HDRNames3);
+xticklabels(HDRNum2);
 xtickangle(90);
 set(gca,'FontSize',6)
 
 xlabel('HDR'); 
 ylabel('Normalized z-score');
 title(sprintf('HDR: Coef = %.2f,Slope = %.2f', coef_list(idx1),slop_list(idx1)));
-legend([bar_exp3, bar_old], {'VR', '2D'}, 'Location', 'southeast','Orientation','vertical');
+legend([bar_exp3, bar_old], {'Exp3 or Old', 'Exp1 or 2'}, 'Location', 'southeast','Orientation','vertical');
 legend('boxoff');
 grid on;
 
