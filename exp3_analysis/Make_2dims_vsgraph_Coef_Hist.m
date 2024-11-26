@@ -36,8 +36,8 @@ for idx1 = 1:size(array1,2)
     plot(x,p_fit,'r-','LineWidth',1.5);
     hold off;
 
-    xlabel('Exp3(VR)');
-    ylabel('Old(2D)');
+    xlabel('Exp3(VR) or Old2D)');
+    ylabel('Exp1 or 2');
     title(sprintf('%s: Coef = %.2f,Slope = %.2f', string(MatNames2(idx1)),coef_list(idx1),slop_list(idx1)));
 end
 plotname = sprintf('%s/%s_Coef.jpg',ana_result,Filename);

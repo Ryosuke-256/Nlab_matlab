@@ -34,8 +34,8 @@ hold on;
 plot(x,p_fit,'r-','LineWidth',1.5);
 hold off;
 
-xlabel('Exp3(VR)');
-ylabel('Old(2D)');
+xlabel('Exp3(VR) or Old2D)');
+ylabel('Exp1 or 2');
 title(sprintf('HDR: Coef = %.2f,Slope = %.2f', coef_list(idx1),slop_list(idx1)));
 
 plotname = sprintf('%s/%s_Coef.jpg',ana_result,Filename);
