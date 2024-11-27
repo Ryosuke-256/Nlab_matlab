@@ -1,4 +1,4 @@
-function [] = Make_2dims_vsgraph_Coef_Hist(array1,err_array1,array2,err_array2,Filename,labelname1,labelname2,amp)
+function [] = Make_2dims_vsgraph_Coef_Hist(array1,err_array1,array2,err_array2,Filename,)
 resultpath = "./results/";
 ana_result = "analysis/";
 Datapath = "./data/";
@@ -6,7 +6,6 @@ Datapath = "./data/";
 MatNames = {'cu0025', 'cu0129', 'pla0075', 'pla0225'};
 MatNames1 = {'cu_0.025', 'cu_0.129', 'pla_0.075', 'pla_0.225'};
 MatNames2 = {'cu-0.025', 'cu-0.129', 'pla-0.075', 'pla-0.225'};
-MatNames4 = {'cu.0.025', 'cu.0.129', 'pla.0.075', 'pla.0.225'};
 HDRNum2 = [2,4,7,8,9,11,12,18,21,22,23,24,25,28,29];
 HDRNum1 = [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30];
 HDRlNames2 = [19, 39, 78, 80, 102, 125, 152, 203, 226, 227, 230, 232, 243, 278, 281];
@@ -18,10 +17,6 @@ dims(1) = [];
 
 coef_list = zeros(dims);
 slop_list = zeros(dims);
-
-if isempty(amp)
-    amp = 1;
-end
 
 figure;
 tiledlayout(2,2,'TileSpacing', 'compact', 'Padding', 'compact');
@@ -41,10 +36,9 @@ for idx1 = 1:size(array1,2)
     plot(x,p_fit,'r-','LineWidth',1.5);
     hold off;
 
-    xlabel(labelname1,'FontSize',12*amp);
-    ylabel(labelname2,'FontSize',12*amp);
-    title(sprintf('%s: \nCoef = %.2f,Slope = %.2f', string(MatNames4(idx1)),coef_list(idx1),slop_list(idx1)),'FontSize',12*amp);
-    grid on;
+    xlabel('Exp3(VR) or Old2D)');
+    ylabel('Exp1 or 2');
+    title(sprintf('%s: Coef = %.2f,Slope = %.2f', string(MatNames2(idx1)),coef_list(idx1),slop_list(idx1)));
 end
 plotname = sprintf('%s/%s_Coef.jpg',ana_result,Filename);
 saveas(gcf, plotname);
@@ -75,10 +69,10 @@ for idx1 = 1:size(array1,2)
     xtickangle(90);
     set(gca,'FontSize',6)
 
-    xlabel('HDR','FontSize',12*amp); 
-    ylabel('Normalized z-score','FontSize',12*amp);
-    title(sprintf('%s: \nCoef = %.2f,Slope = %.2f', string(MatNames4(idx1)),coef_list(idx1),slop_list(idx1)),'FontSize',12*amp);
-    legend([bar_exp3, bar_old], {labelname1, labelname2}, 'Location', 'southeast','Orientation','vertical');
+    xlabel('HDR'); 
+    ylabel('Normalized z-score');
+    title(sprintf('%s: Coef = %.2f,Slope = %.2f', string(MatNames2(idx1)),coef_list(idx1),slop_list(idx1)));
+    legend([bar_exp3, bar_old], {'Exp3 or Old', 'Exp1 or 2'}, 'Location', 'southeast','Orientation','vertical');
     legend('boxoff');
     grid on;
 end
