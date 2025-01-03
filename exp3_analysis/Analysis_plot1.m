@@ -20,7 +20,7 @@ function [] = Analysis_plot1(array1,array2,coef_list,slop_list,x_label,y_label,g
 
     y_Limits = ylim;
     x_Limits = xlim;
-    text(x_Limits(1)*0.9,y_Limits(2)*0.9, sprintf('Corr : %.2f',r_value), 'FontSize', 8*amp);
+    text(x_Limits(1)*0.9,y_Limits(2)*0.9, sprintf('r = %.2f',r_value), 'FontSize', 8*amp);
     text(x_Limits(1)*0.9,y_Limits(2)*0.75, sprintf('Slope : %.2f',p(1)), 'FontSize', 8*amp);
 
     xlabel(x_label,'FontSize',12*amp);
