@@ -1,0 +1,24 @@
+function [] = Analysis_plot1(array1,array2,coef_list,slop_list,x_label,y_label,graph_title,amp)
+    x = array1;
+    y = array2;
+    r = corrcoef(x,y);
+    r_value = r(1,2);
+    coef_list(end+1) = r_value;
+    p = polyfit(x,y,1);
+    p_fit = polyval(p,x);
+    slop_list(end+1) = p(1);
+
+    scatter(x,y,'filled');
+    hold on;
+    plot(x,p_fit,'r-','LineWidth',1.5);
+    hold off;
+
+    y_Limits = ylim;
+    x_Limits = xlim;
+    text(x_Limits(1)*0.9,y_Limits(2)*0.9, sprintf('Corr : %s',r_value), 'FontSize', 15*amp);
+    text(x_Limits(1)*0.9,y_Limits(2)*0.8, sprintf('Corr : %s',p(1)), 'FontSize', 15*amp);
+
+    xlabel(x_label,'FontSize',12*amp);
+    ylabel(y_label,'FontSize',12*amp);
+    title(graph_title,'FontSize',12*amp);
+end
