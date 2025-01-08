@@ -176,24 +176,24 @@ end
 material_count = 1;
 for material_type = 1 : materialNum
     for roughness_type = 1 : roughnessNum
-    s = sprintf('Material: %s, Roughness: %s', material(material_type), roughness(material_type, roughness_type));
-    h1 = figure('Position', [1 1 1301 944], 'Name', s);
-    
-    figure(h1)
-    hold on; % 複数の棒グラフを重ねるため
-    for shape_type = 1:9 % 形状の条件のループ
-        bar((1:17) -0.5 + (shape_type-1)*0.1, coef_all{material_count, shape_type}, 0.1,'FaceColor', colors(shape_type,:)); % 棒グラフ (位置を微調整)
-    end
-%    title(sprintf('Material %d', i));
-    legend('sphere', 'bunny', 'dragon', 'boardA', 'boardB', 'boardC', 'boardA30', 'boardB30', 'boardC30');
-    xlabel('偏回帰係数');
-    xticks(1:numel(names));
-    xticklabels(names);
-    xtickangle(90); % x軸のラベルを90度傾ける
-    ylim([-1,1]);
-    grid on;
-    hold off;
-    
-    material_count = material_count + 1;
+        s = sprintf('Material: %s, Roughness: %s', material(material_type), roughness(material_type, roughness_type));
+        h1 = figure('Position', [1 1 1301 944], 'Name', s);
+        
+        figure(h1)
+        hold on; % 複数の棒グラフを重ねるため
+            for shape_type = 1:9 % 形状の条件のループ
+                bar((1:17) -0.5 + (shape_type-1)*0.1, coef_all{material_count, shape_type}, 0.1,'FaceColor', colors(shape_type,:)); % 棒グラフ (位置を微調整)
+            end
+    %    title(sprintf('Material %d', i));
+        legend('sphere', 'bunny', 'dragon', 'boardA', 'boardB', 'boardC', 'boardA30', 'boardB30', 'boardC30');
+        xlabel('偏回帰係数');
+        xticks(1:numel(names));
+        xticklabels(names);
+        xtickangle(90); % x軸のラベルを90度傾ける
+        ylim([-1,1]);
+        grid on;
+        hold off;
+        
+        material_count = material_count + 1;
     end
 end
