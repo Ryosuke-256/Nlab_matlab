@@ -13,23 +13,17 @@ function [] = Analysis_plot1(array1,array2,coef_list,slop_list,x_label,y_label,g
     r_value = r(1,2);
     coef_list(end+1) = r_value;
 
-    % plot
-    scatter(x,y,20,'b','filled');
-
     % 回帰
     if PreDim ==0
-        ft = fittype('a*exp(b*(x-c))+d', 'independent', 'x', 'coefficients', {'a', 'b', 'c','d'}); 
-        mdl = fit(x, y, ft, 'StartPoint', [1, 1, -xmax, -ymax]);
+        ft = fittype('a*exp(b*(x-1))-ymax', 'independent', 'x', 'coefficients', {'a', 'b'}, 'problem', 'ymax'); 
+        mdl = fit(x, y, ft, 'StartPoint', [1, 0.5], 'problem', ymax);
         x_fit = linspace(min(x), max(x), 100);
-        y_fit = mdl.a * exp(mdl.b * (x_fit - mdl.c)) + mdl.d;
+        y_fit = mdl.a * exp(mdl.b * x_fit);
         plot(x_fit, y_fit, 'r-', 'LineWidth', 1.5);
 
-        % R2
-        y_mean = mean(y);
-        y_pred = mdl.a * exp(mdl.b * (x - mdl.c)) + mdl.d;
-        rss = sum((y - y_pred).^2);
-        tss = sum((y - y_mean).^2);
-        R2 = 1 - (rss / tss);
+        % 平均二乗誤差
+        fitInfo = goodnessOfFit(mdl.a * exp(mdl.b * x), y, 'MSE');
+        rmse = sqrt(fitInfo);
     else
         ft = fittype('a*x + b'); 
         mdl = fit(x, y, ft, 'StartPoint', [1, 0]);
@@ -37,12 +31,9 @@ function [] = Analysis_plot1(array1,array2,coef_list,slop_list,x_label,y_label,g
         slop_list(end+1) = mdl.a;
         plot(x, p_fit, 'r-', 'LineWidth', 1.5);
         
-        % R2
-        y_mean = mean(y);
-        y_pred = feval(mdl, x);
-        rss = sum((y - y_pred).^2);
-        tss = sum((y - y_mean).^2);
-        R2 = 1 - (rss / tss);
+        % 平均二乗誤差
+        fitInfo = goodnessOfFit(mdl.a * exp(mdl.b * x), y, 'MSE');
+        rmse = sqrt(fitInfo);
         %{
         p = polyfit(x,y,PreDim);
         p_fit = polyval(p,x);
@@ -50,6 +41,8 @@ function [] = Analysis_plot1(array1,array2,coef_list,slop_list,x_label,y_label,g
         plot(x,p_fit,'r-','LineWidth',1.5);
         %}
     end
+
+    scatter(x,y,20,'b','filled');
 
     xlim([-xmax xmax]);
     ylim([-ymax ymax]);
@@ -69,7 +62,7 @@ function [] = Analysis_plot1(array1,array2,coef_list,slop_list,x_label,y_label,g
 
     text(x_limits(1)*0.9,y_limits(2)*0.9, sprintf('r = %.2f',r_value), 'FontSize', 8*amp);
     %text(x_limits(1)*0.9,y_limits(2)*0.75, sprintf('Slope : %.2f',p(1)), 'FontSize', 8*amp);
-    text(x_limits(1)*0.9,y_limits(2)*0.75, sprintf('R2 : %.2f',R2), 'FontSize', 8*amp);
+    text(x_limits(1)*0.9,y_limits(2)*0.75, sprintf('R^2 : %.2f',rmse), 'FontSize', 8*amp);
 
     xlabel(x_label,'FontSize',12*amp);
     ylabel(y_label,'FontSize',12*amp);
