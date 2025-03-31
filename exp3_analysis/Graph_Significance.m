@@ -24,7 +24,7 @@ if threshold > 0
     text(1,(abs(r_value)+0.12)*r_value/abs(r_value),graphtext3,'HorizontalAlignment','center','VerticalAlignment','bottom','FontSize',12*amp);
 end
 
-ylim([0.5,1.1]);
+ylim([0.0,1.1]);
 y_Limits = ylim;
 x_Limits = xlim;
 maxorigin = max(corrA);
@@ -37,6 +37,7 @@ aveorigin = mean(corrA);
 VR_bar = yline(aveorigin, 'k--', 'LineWidth', 1.2, 'DisplayName', 'Within-subject average');
 
 text(x_Limits(1)*0.9,y_Limits(2)*0.95, '* : p < 0.05', 'FontSize', 15*amp);
+ylabel('Correlation Coefficient','FontSize',18*amp);
 %{
 set(gca, 'XTick', []);
 ylabel('Correlation Coefficient','FontSize',18*amp);

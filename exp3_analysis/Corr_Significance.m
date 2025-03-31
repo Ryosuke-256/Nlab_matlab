@@ -18,7 +18,6 @@ for i = 1:numBootstrap
     % === 1. データAでの基準相関係数を計算 ===
     % 1.a.b 条件ごとにブートストラップで平均を計算
     sampleA1 = MeanArray(dataA);
-    disp(size(sampleA1));
     sampleA2 = MeanArray(dataA);
 
     % 1.c 平均値データ間の相関係数
@@ -46,7 +45,6 @@ subs = repmat({':'}, 1, dims);
 subs{dims} = random_idx;
 reducedData = array(subs{:});
 for d = dims:-1:2
-    disp(size(reducedData));
     reducedData = mean(reducedData, d);
 end
 end
