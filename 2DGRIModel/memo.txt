@@ -1,0 +1,46 @@
+memo
+Inoue
+{'コントラスト','歪度','尖度','サブバンドコントラスト1','サブバンドコントラスト2','サブバンドコントラスト3','サブバンドコントラスト4','サブバンドコントラスト5','サブバンドコントラスト6',...
+    'サブバンド歪度1', 'サブバンド歪度2','サブバンド歪度3','サブバンド歪度4','サブバンド歪度5','サブバンド歪度6',...
+    'サブバンド尖度1', 'サブバンド尖度2','サブバンド尖度3','サブバンド尖度4','サブバンド尖度5','サブバンド尖度6',...
+    'エントロピー', '照明数', '照明サイズ', '球面調和関数1', '球面調和関数2', '球面調和関数3', '球面調和関数4',...
+    '球面調和関数5', '球面調和関数6', '球面調和関数7', '球面調和関数8', '球面調和関数9', '球面調和関数10',...
+    'brilliance', 'diffuseness', '背景コントラスト', '背景歪度', '背景尖度', '背景エントロピー'}
+
+{'hdrstd','hdrskewness','hdrkurtosis','hdrcontrast_sb_1','hdrcontrast_sb_2','hdrcontrast_sb_3','hdrcontrast_sb_4','hdrcontrast_sb_5','hdrcontrast_sb_6','hdrskewness_sb_1','hdrskewness_sb_2','hdrskewness_sb_3','hdrskewness_sb_4','hdrskewness_sb_5','hdrskewness_sb_6','hdrentropy','illumination_count','illumination_size','SH_power_1','SH_power_2','SH_power_3','SH_power_4','SH_power_5','SH_power_6','SH_power_7','SH_power_8','SH_power_9','SH_power_10','Brilliance','Diffuseness','hdrstd_lefty','hdrskewness_lefty','hdrkurtosis_lefty','hdrentropy_lefty'}
+
+
+makihira
+{'hdrstd','hdrskewness','hdrkurtosis','hdrentropy','hdrstd_lefty','hdrskewness_lefty','hdrkurtosis_lefty','hdrentropy_lefty','hdrcontrast_sb_1','hdrcontrast_sb_2','hdrcontrast_sb_3','hdrcontrast_sb_4','hdrcontrast_sb_5','hdrcontrast_sb_6','hdrskewness_sb_1','hdrskewness_sb_2','hdrskewness_sb_3','hdrskewness_sb_4','hdrskewness_sb_5','hdrskewness_sb_6','hdrkurtosis_sb_1','hdrkurtosis_sb_2','hdrkurtosis_sb_3','hdrkurtosis_sb_4','hdrkurtosis_sb_5','hdrkurtosis_sb_6','illumination_count','illumination_size','SH_power_0','SH_power_1','SH_power_2','SH_power_3','SH_power_4','SH_power_5','SH_power_6','SH_power_7','SH_power_8','SH_power_9','SH_power_10','Brilliance','Diffuseness'}
+
+
+{'SH_power_0',}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
