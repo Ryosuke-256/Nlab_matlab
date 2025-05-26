@@ -3,14 +3,11 @@ function [normalized_hdr] = normalizeBySH0(hdr_image)
 % 出力: normalized_hdr (0次成分で正規化されたHDR画像)
 
     % Step 1: RGB → 輝度（Y成分）に変換
-    %luminance = rgb2luminance(hdr_image);
-    xyz = rgb2xyz(hdr_image);
-    luminance = xyz(:,:,2);
+    luminance = rgb2luminance(hdr_image);
 
     % Step 2: 球面調和関数0次成分を計算（定数倍×全体の平均）
     % L_0 ∝ mean(luminance)
     SH0 = mean(luminance(:));  % 0次成分に相当
-    disp(SH0);
 
     % Step 3: HDR画像全体を0次成分で正規化
     normalized_hdr = hdr_image / SH0;
