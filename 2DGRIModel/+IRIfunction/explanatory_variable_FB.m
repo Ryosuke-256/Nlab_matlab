@@ -121,7 +121,6 @@ explanatory_variable.Properties.VariableNames = {'hdrstd','hdrskewness','hdrkurt
 end
 
 
-
 function XYZ = srgbxyz(hdrhdr)
 
 %大きさを取得し、関数に入るようにサイズ変換
@@ -136,7 +135,5 @@ XYZMontage=reshape(hdrxyz,a,b,3);
 
 %輝度成分のみを取り出す
 XYZ = XYZMontage(:,:,2);
-
-
 
 end
