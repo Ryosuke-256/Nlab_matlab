@@ -1,5 +1,5 @@
-function Results = Format_onedata(resultpath, HDRNames_30, HDRNames_15, MatNames1, ShapeNames, num_HDRs, num_Materials, num_Shapes, num_VRParticipants, num_Trials)
-RowHMSPT = zeros(num_HDRs, num_Materials, num_Shapes, num_VRParticipants, num_Trials);
+function Results = Format_inouedata(resultpath, HDRNames_30, HDRNames_15, MatNames, ShapeNames, num_HDRs, num_Materials, num_Shapes, num_2DParticipants, num_Trials)
+RowHMSPT = zeros(num_HDRs, num_Materials, num_Shapes, num_2DParticipants, num_Trials);
 
 %indivsual folder
 dirInfo1 = dir(resultpath);
@@ -11,7 +11,6 @@ subject_name = {};
 
 for foldernum1 = 1:numFolders1
     namefolder = fullfile(resultpath, FolderNames1{foldernum1});
-
     %exp data
     dirInfo2 = dir(namefolder);
     FileNames2 = {dirInfo2(~ismember({dirInfo2(:).name}, {'.', '..'})).name};
@@ -19,13 +18,9 @@ for foldernum1 = 1:numFolders1
     for foldernum2 = 1:numFile2
         datafile = fullfile(namefolder,FileNames2{foldernum2});
         disp(datafile);
-
-        csvData = readtable(datafile,'ReadVariableNames', true,'VariableNamingRule','preserve');
-        headers = csvData.Properties.VariableNames;
-        %avscore = reshape(mean(csvData{:,:},1),1,[]);
-        Rowdata = table2array(csvData);
-
-        disp(headers)
+        
+        load(datafile);
+        InoueRowData = illumiPsvAll;
 
         %words
         words = split(FileNames2{foldernum2},{'_', '.'});
@@ -33,17 +28,15 @@ for foldernum1 = 1:numFolders1
             subject_name{end + 1} = words{1};
         end
 
-        for Trial = 1:size(csvData,1)
-            for i = 1:length(headers)
-                nameStr = headers{i};
-                idStr = regexp(nameStr, '\d+', 'match');
-                idNum = str2double(idStr(end));
-                HDRIndex = find(HDRNames_30 == idNum);
-                MatIndex = find(strcmp(MatNames1,words{2}));
-                ShapeIndex = find(strcmp(ShapeNames,words{3}));
-                SubjectsIndex = find(strcmp(FolderNames1,words{1}));
-                if ~isempty(HDRIndex) && ~isempty(MatIndex) && ~isempty(ShapeIndex) && ~isempty(SubjectsIndex)
-                    RowHMSPT(HDRIndex, MatIndex, ShapeIndex,SubjectsIndex,Trial) = Rowdata(Trial,i);
+        for Trial = 1:size(InoueRowData,1)
+            for hdr = 1:size(InoueRowData,2)
+                [isMatch,~] = ismember(MatNames,words);
+                MatIndex = find(isMatch);
+                [isMatch,~] = ismember(ShapeNames,words);
+                ShapeIndex = find(isMatch);
+                SubjectsIndex = foldernum1;
+                if ~isempty(MatIndex) && ~isempty(ShapeIndex)
+                    RowHMSPT(hdr, MatIndex, ShapeIndex,SubjectsIndex,Trial) = InoueRowData(Trial,hdr);
                 end
             end
         end
@@ -76,6 +69,7 @@ end
 
 % 標準誤差
 error_ZsHMS = std(RowHMSP, 0, 4) / sqrt(size(RowHMSP, 4));
+
 %正規化
 NormHMS = zeros(size(ZsHMS));
 error_NormHMS = zeros(size(error_ZsHMS));
@@ -88,7 +82,6 @@ for i = 1:size(ZsHMS, 3)
         error_NormHMS(:, j, i) = error_ZsHMS(:, j, i) / (hdr_max - hdr_min);
     end
 end
-
 %---------------------------------------
 % (HDR,Material)
 %---------------------------------------
@@ -155,16 +148,15 @@ hdr_max = max(ZsH(:));
 
 NormH(:) = 2 * (ZsH(:) - hdr_min) / (hdr_max - hdr_min)-1;
 error_NormH(:) = error_ZsH(:) /(hdr_max - hdr_min);
-
 %---------------------------------------
 % VS Exp1,2 (bunny,15HDR,Material)
 %---------------------------------------
-Row30bnyHMP = RowHMSP(:,:,2,:);
+InoueRow30bnyHMP = RowHMSP(:,:,2,:);
 
 % be 15 data
-Row15bnyHMP = zeros(15,num_Materials,num_VRParticipants);
+Row15bnyHMP = zeros(15,num_Materials,length(subject_name));
 [common_names, idx30, idx15] = intersect(HDRNames_30, HDRNames_15);
-Row15bnyHMP(idx15,:,:) = Row30bnyHMP(idx30,:,:);
+Row15bnyHMP(idx15,:,:) = InoueRow30bnyHMP(idx30,:,:);
 
 Row15bnyHM = mean(Row15bnyHMP,3);
 %zscore化
@@ -180,6 +172,7 @@ error_HM15 = std(Row15bnyHMP,0,3)/sqrt(size(Row15bnyHMP,3));
 % VS Exp1,2 (bunny,15HDR)
 %---------------------------------------
 Row15bnyH = mean(Row15bnyHM,2);
+
 %zscore化
 Zs15bnyH = zeros(size(Row15bnyH));
 Zs15bnyH(:) = zscore(Row15bnyH(:));
@@ -187,7 +180,6 @@ Zs15bnyH(:) = zscore(Row15bnyH(:));
 %errorbar
 Row15bnyHMP_reshape = reshape(Row15bnyHMP,size(Row15bnyHMP,1),[]);
 error_H15 = std(Row15bnyHMP_reshape,0,3)/sqrt(size(Row15bnyHMP,3)+size(Row15bnyHMP,2));
-
 
 % data save
 Results = struct(...
