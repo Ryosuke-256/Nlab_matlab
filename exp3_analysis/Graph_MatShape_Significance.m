@@ -1,4 +1,6 @@
-function [] = Graph_MatShape_Significance(dataA,dataB,corrA,corrAB,threshold,amp)
+function [] = Graph_MatShape_Significance(dataA,dataB,corrA,corrAB,threshold,amp,numBootstrap,ShapeNames)
+[numIllumination,MatNum,ShapeNum,~] = size(dataA); % 照明環境の数
+
 for mat = 1:MatNum
     figure;
     hold on;
@@ -40,13 +42,13 @@ for mat = 1:MatNum
             'k', 'FaceAlpha', 0.3, 'EdgeColor', 'none');
         
         aveorigin = mean(corrA(:,mat,shape));
-        bar = plot([x_axis-0.5, x_axis+0.5], [aveorigin, aveorigin], 'r--', 'LineWidth', 1.2,'DisplayName', 'Within-subject average');
+        bar_plot = plot([x_axis-0.5, x_axis+0.5], [aveorigin, aveorigin], 'r--', 'LineWidth', 1.2,'DisplayName', 'Within-subject average');
     end
     set(gca, 'XTick', 1:length(ShapeNames));
     xticklabels(ShapeNames);
     xlabel('Shape types','FontSize',18*amp);
     ylabel('Correlation Coefficient','FontSize',18*amp);
-    
+    %text(x_Limits(1)*0.9,y_Limits(2)*0.95, '* : p < 0.05', 'FontSize', 15*amp);
 end
 end
 
