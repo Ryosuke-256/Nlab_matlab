@@ -53,8 +53,8 @@ function [] = Analysis_plot1(array1,array2,coef_list,slop_list,x_label,y_label,g
         %}
     end
 
-    xlim([xmin xmax]);
-    ylim([ymin ymax]);
+    xlim([xmin xmax*1.1]);
+    ylim([ymin ymax*1.1]);
     x_limits = xlim;
     y_limits = ylim;
     xlim([min(x_limits(1),y_limits(1)) max(x_limits(2),y_limits(2))]);

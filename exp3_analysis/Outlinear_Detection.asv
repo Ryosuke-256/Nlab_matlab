@@ -1,0 +1,86 @@
+function [] = Outlinear_Detection(array1,array2,threshold,coef_list,slop_list,x_label,y_label,graph_title,HDRNo,amp)
+    x = array1;
+    y = array2;
+    n = length(x);
+    xmax = max(abs(x));
+    ymax = max(abs(y));
+    xmin = min(x);
+    ymin = min(y);
+
+    point_labels = 1:n;
+
+    %% 2. 線形回帰モデルの構築
+    mdl = fitlm(x, y, 'linear');
+
+    disp(mdl);
+
+    %% 3. 残差の取得と計算
+    studentized_residuals = mdl.Residuals.Studentized;
+
+    %% 4. 有意差の判定（外れ値の特定）
+    outlier_indices = find(abs(studentized_residuals) > threshold);
+
+    if ~isempty(outlier_indices)
+        fprintf('\n--- 検出された外れ値（Student化残差の絶対値が%.1fを超える点）---\n', threshold);
+        for i = 1:length(outlier_indices)
+            idx = outlier_indices(i);
+            fprintf('点番号: %d, VR GRI: %.2f, 2D GRI: %.2f, Student化残差: %.2f\n', ...
+                    point_labels(idx), x(idx), y(idx), studentized_residuals(idx));
+        end
+    else
+        fprintf('\n--- Student化残差の絶対値が%.1fを超える外れ値は検出されませんでした ---\n', threshold);
+    end
+
+    %% 5. 結果の可視化
+    figure;
+    hold on;
+    grid on;
+
+    scatter(x, y, 50, 'b', 'filled', 'DisplayName', '全てのデータ点');
+    % 回帰線をプロット
+    x_fit = linspace(min(x), max(x), 100);
+    y_fit = predict(mdl, x_fit');
+    plot(x_fit, y_fit, 'r-', 'LineWidth', 2, 'DisplayName', '回帰線');
+
+    % 外れ値として検出された点を異なる色でプロット
+    if ~isempty(outlier_indices)
+        outlier_vr_gri = x(outlier_indices);
+        outlier_two_d_gri = y(outlier_indices);
+        scatter(outlier_vr_gri, outlier_two_d_gri, 70, 'ro', 'LineWidth', 1.5, 'DisplayName', sprintf('外れ値 (残差 > %.1f)', threshold));
+    end
+    
+    % HDR No
+    for point = 1:length(x)
+        text(x(point)-0.01, y(point)+0.01, num2str(HDRNo(point)), 'VerticalAlignment', 'bottom', 'HorizontalAlignment', 'right','FontSize',6*amp);
+    end
+
+    xlabel(x_label,'FontSize',12*amp);
+    ylabel(y_label,'FontSize',12*amp);
+    title(graph_title,'FontSize',12*amp);
+    legend('Location', 'best');
+    
+    xlim([xmin xmax]);
+    ylim([ymin ymax]);
+    x_limits = xlim;
+    y_limits = ylim;
+    xlim([min(x_limits(1),y_limits(1)) max(x_limits(2),y_limits(2))]);
+    ylim([min(x_limits(1),y_limits(1)) max(x_limits(2),y_limits(2))]);
+    x_limits = xlim;
+    y_limits = ylim;
+    common_limits = [min([x_limits, y_limits]), max([x_limits, y_limits])];
+    plot(common_limits, common_limits, 'g--', 'LineWidth', 2,'DisplayName',sprintf('equal');
+
+    % モデル情報からR^2とr（相関係数）を表示
+    r_val = sqrt(mdl.Rsquared.Ordinary); 
+    if mdl.Coefficients.Estimate(2) < 0
+        r_val = -r_val;
+    end
+
+    coef_list(end+1) = r_val;
+    slop_list(end+1) = mdl.Rsquared.Ordinary;
+    
+    text(min(xlim) + 0.1, max(ylim) - 0.2, sprintf('r = %.2f', r_val), 'FontSize', 12, 'FontWeight', 'bold');
+    text(min(xlim) + 0.1, max(ylim) - 0.4, sprintf('R2 = %.2f', mdl.Rsquared.Ordinary), 'FontSize', 12, 'FontWeight', 'bold');
+    
+    hold off;
+end
