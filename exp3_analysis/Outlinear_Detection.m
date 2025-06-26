@@ -1,4 +1,4 @@
-function [] = Outlinear_Detection(array1,array2,threshold,coef_list,slop_list,x_label,y_label,graph_title,HDRNo,amp)
+function [Outlinear_Points] = Outlinear_Detection(array1,array2,threshold,coef_list,slop_list,x_label,y_label,graph_title,HDRNo,amp)
     x = array1;
     y = array2;
     n = length(x);
@@ -8,6 +8,7 @@ function [] = Outlinear_Detection(array1,array2,threshold,coef_list,slop_list,x_
     ymin = min(y);
 
     point_labels = 1:n;
+    Outlinear_Points = zeros(size(x));
 
     %% 2. 線形回帰モデルの構築
     mdl = fitlm(x, y, 'linear');
@@ -26,13 +27,13 @@ function [] = Outlinear_Detection(array1,array2,threshold,coef_list,slop_list,x_
             idx = outlier_indices(i);
             fprintf('点番号: %d, VR GRI: %.2f, 2D GRI: %.2f, Student化残差: %.2f\n', ...
                     point_labels(idx), x(idx), y(idx), studentized_residuals(idx));
+            Outlinear_Points(idx) = Outlinear_Points(idx) + 1;
         end
     else
         fprintf('\n--- Student化残差の絶対値が%.1fを超える外れ値は検出されませんでした ---\n', threshold);
     end
 
     %% 5. 結果の可視化
-    figure;
     hold on;
     grid on;
 
@@ -40,13 +41,13 @@ function [] = Outlinear_Detection(array1,array2,threshold,coef_list,slop_list,x_
     % 回帰線をプロット
     x_fit = linspace(min(x), max(x), 100);
     y_fit = predict(mdl, x_fit');
-    plot(x_fit, y_fit, 'r-', 'LineWidth', 2, 'DisplayName', '回帰線');
+    plot(x_fit, y_fit, 'r-', 'LineWidth', 1.5*amp, 'DisplayName', '回帰線');
 
     % 外れ値として検出された点を異なる色でプロット
     if ~isempty(outlier_indices)
         outlier_vr_gri = x(outlier_indices);
         outlier_two_d_gri = y(outlier_indices);
-        scatter(outlier_vr_gri, outlier_two_d_gri, 70, 'ro', 'LineWidth', 1.5, 'DisplayName', sprintf('外れ値 (残差 > %.1f)', threshold));
+        scatter(outlier_vr_gri, outlier_two_d_gri, 70, 'ro', 'LineWidth', 1.5*amp, 'DisplayName', sprintf('外れ値 (残差 > %.1f)', threshold));
     end
     
     % HDR No
@@ -54,10 +55,10 @@ function [] = Outlinear_Detection(array1,array2,threshold,coef_list,slop_list,x_
         text(x(point)-0.01, y(point)+0.01, num2str(HDRNo(point)), 'VerticalAlignment', 'bottom', 'HorizontalAlignment', 'right','FontSize',6*amp);
     end
 
-    xlabel(x_label,'FontSize',12*amp);
-    ylabel(y_label,'FontSize',12*amp);
-    title(graph_title,'FontSize',12*amp);
-    legend('Location', 'best');
+    xlabel(x_label,'FontSize',8*amp);
+    ylabel(y_label,'FontSize',8*amp);
+    title(graph_title,'FontSize',8*amp);
+    %legend('Location', 'best');
     
     xlim([xmin xmax]);
     ylim([ymin ymax]);
@@ -79,8 +80,9 @@ function [] = Outlinear_Detection(array1,array2,threshold,coef_list,slop_list,x_
     coef_list(end+1) = r_val;
     slop_list(end+1) = mdl.Rsquared.Ordinary;
     
-    text(min(xlim) + 0.1, max(ylim) - 0.2, sprintf('r = %.2f', r_val), 'FontSize', 12, 'FontWeight', 'bold');
-    text(min(xlim) + 0.1, max(ylim) - 0.4, sprintf('R2 = %.2f', mdl.Rsquared.Ordinary), 'FontSize', 12, 'FontWeight', 'bold');
+    text(x_limits(1)*0.9,y_limits(2)*0.9, sprintf('r = %.2f', r_val), 'FontSize', 8*amp);
+    text(x_limits(1)*0.9,y_limits(2)*0.75, sprintf('R2 = %.2f', mdl.Rsquared.Ordinary), 'FontSize', 8*amp);
     
     hold off;
+    
 end
