@@ -98,17 +98,17 @@ classdef DataAnalyzer < handle
             fprintf('インスタンスの作成が完了しました。\n');
         end
         
-        
-        % ---頻度ヒストグラムをプロット ---
-        function plotHistogram(obj, dataSetName, propertyName)
-            % 指定されたデータセットの、指定されたプロパティのヒストグラムを作成・保存します。
+        % ---頻度ヒストグラム　---
+        function plotHistogram(obj, dataSetName, propertyName, mode)
             % 入力:
-            %   dataSetName (string): 対象のデータセット名 ('Set-A')
-            %   propertyName (string): プロットしたいデータの名前 ('RowHMS')
+            % dataSetName (string): 対象のデータセット名 ('Set-A')
+            % propertyName (string): プロットしたいデータの名前 ('RowHMS')
+            % mode : 0:全コンディション、1:それぞれのコンディション
             arguments
                 obj
                 dataSetName (1,1) string
                 propertyName (1,1) string
+                mode (1,1) double
             end
             
             % データセットとプロパティの存在をチェック
@@ -121,27 +121,60 @@ classdef DataAnalyzer < handle
             end
 
             targetData = dataSet.(propertyName);
-            targetData_reshape = reshape(targetData,[],1);
-            fprintf('ヒストグラムを作成中: %s の %s\n', dataSetName, propertyName);
             
-            % ヒストグラムの描画
-            fig = figure('Visible', 'off'); % バックグラウンドで図を作成
-            histogram(targetData_reshape(:), 'BinEdges', 0:0.025:1);
-            
-            xlabel('Bin', 'FontSize', 14);
-            ylabel('Frequency', 'FontSize', 14);
-            
-            plotTitle = sprintf('%s - %s (Bin Width: 0.025)', dataSetName, propertyName);
-            title(plotTitle, 'FontSize', 16, 'Interpreter', 'none');
-            grid on;
-            
-            % プロットの保存
-            plotFileName = sprintf('%s_%s_hist.jpg', dataSetName, propertyName);
-            plotFullPath = fullfile(obj.ResultDir, plotFileName); 
-            
-            saveas(fig, plotFullPath);
-            close(fig);
-            fprintf('  -> プロットを保存しました: %s\n', plotFullPath);
+            if mode == 0
+                %全コンディションモード
+                targetData_reshape = reshape(targetData,[],1);
+                fprintf('ヒストグラムを作成中: %s の %s\n', dataSetName, propertyName);
+
+                % ヒストグラムの描画
+                fig = figure('Visible', 'off'); % バックグラウンドで図を作成
+                histogram(targetData_reshape(:), 'BinEdges', 0:0.025:1);
+
+                xlabel('Bin', 'FontSize', 14);
+                ylabel('Frequency', 'FontSize', 14);
+
+                plotTitle = sprintf('%s - %s (Bin Width: 0.025)', dataSetName, propertyName);
+                title(plotTitle, 'FontSize', 16, 'Interpreter', 'none');
+                grid on;
+
+                % プロットの保存
+                plotFileName = sprintf('%s_%s_hist.jpg', dataSetName, propertyName);
+                plotFullPath = fullfile(obj.ResultDir, plotFileName); 
+
+                saveas(fig, plotFullPath);
+                close(fig);
+                fprintf('  -> プロットを保存しました: %s\n', plotFullPath);
+            elseif mode == 1
+                %材質、形状ごとの頻度を見るモード
+                targetData_per = permute(targetData,[2,3,1,4,5]);
+                targetData_reshape = reshape(targetData_per,size(targetData_per,1),size(targetData_per,2),[]);
+
+                fprintf('ヒストグラムを作成中: %s の %s\n', dataSetName, propertyName);
+
+                for mat = 1:size(targetData_reshape,1)
+                    fig = figure('Visible', 'off','Position',[50,50,1300,840]);
+                    tiledlayout(2,3,'TileSpacing', 'compact', 'Padding', 'compact');
+                    for shape = 1:size(targetData_reshape,2)
+                        nexttile;
+                        histogram(targetData_reshape(mat,shape,:), 'BinEdges', 0:0.025:1);
+
+                        xlabel('Bin', 'FontSize', 14);
+                        ylabel('Frequency', 'FontSize', 14);
+
+                        plotTitle = sprintf('%s - %s (Bin Width: 0.025)', dataSetName, propertyName);
+                        title(plotTitle, 'FontSize', 16, 'Interpreter', 'none');
+                        grid on;
+                    end
+                    % プロットの保存
+                    plotFileName = sprintf('%s_%s_%s_hist.jpg', dataSetName, propertyName,string(obj.MatNames3(mat)));
+                    plotFullPath = fullfile(obj.ResultDir, plotFileName); 
+                    
+                    saveas(fig, plotFullPath);
+                    close(fig);
+                    fprintf('  -> プロットを保存しました: %s\n', plotFullPath);
+                end
+            end
         end
     end
     
