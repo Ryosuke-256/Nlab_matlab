@@ -189,6 +189,7 @@ classdef DataAnalyzer < handle
                 options.HdrSet   (1,1) string {mustBeMember(options.HdrSet, ["HDRNum_15", "HDRNum_30"])} = "HDRNum_30"
                 options.Amp      (1,1) double {mustBeNumeric} = 1.5
                 options.PreDim   (1,1) double {mustBeNumeric} = 1
+                options.Mode     (1,1) double {mustBeNumeric} = 1
             end
 
             fprintf('散布図とヒストグラムの作成を開始します...\n');
@@ -201,7 +202,7 @@ classdef DataAnalyzer < handle
 
             hdrData = obj.(options.HdrSet);
             
-            if mode == 1
+            if options.Mode == 1
                 graphtitle = sprintf('%s vs %s about %s', dataSpecA.DisplayName, dataSpecB.DisplayName, options.Property);
                 % --- 散布図の作成と保存 ---
                 obj.createAndSaveScatterPlot_H(targetDataA, targetDataB, hdrData, ...
@@ -213,16 +214,19 @@ classdef DataAnalyzer < handle
 
                 fprintf('プロットの作成が完了しました。\n');
                 
-            elseif mode == 2
+            elseif options.Mode == 2
                 graphtitle = sprintf('%s vs %s about %s', dataSpecA.DisplayName, dataSpecB.DisplayName, options.Property);
                 % --- 散布図の作成と保存 ---
-                obj.createAndSaveScatterPlot_H(targetDataA, targetDataB, hdrData, ...
+                obj.createAndSaveScatterPlot_HM(targetDataA, targetDataB, hdrData, ...
                     dataSpecA.DisplayName, dataSpecB.DisplayName, options.Property, graphtitle, options.Amp,options.PreDim);
                 
-            elseif mode == 3
+            elseif options.Mode == 3
                 graphtitle = sprintf('%s vs %s about %s', dataSpecA.DisplayName, dataSpecB.DisplayName, options.Property);
+                % --- 散布図の作成と保存 ---
+                obj.createAndSaveScatterPlot_HS(targetDataA, targetDataB, hdrData, ...
+                    dataSpecA.DisplayName, dataSpecB.DisplayName, options.Property, graphtitle, options.Amp,options.PreDim);
                 
-            elseif mode == 4
+            elseif options.Mode == 4
                 
             end
         end
