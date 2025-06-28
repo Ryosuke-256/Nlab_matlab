@@ -212,16 +212,10 @@ classdef DataAnalyzer < handle
                     hdrData, graphtitle, options.Amp, dataSpecA.DisplayName, dataSpecB.DisplayName, options.Property);
 
                 fprintf('プロットの作成が完了しました。\n');
-                
             elseif mode == 2
                 graphtitle = sprintf('%s vs %s about %s', dataSpecA.DisplayName, dataSpecB.DisplayName, options.Property);
-                % --- 散布図の作成と保存 ---
-                obj.createAndSaveScatterPlot_H(targetDataA, targetDataB, hdrData, ...
-                    dataSpecA.DisplayName, dataSpecB.DisplayName, options.Property, graphtitle, options.Amp,options.PreDim);
-                
             elseif mode == 3
                 graphtitle = sprintf('%s vs %s about %s', dataSpecA.DisplayName, dataSpecB.DisplayName, options.Property);
-                
             elseif mode == 4
                 
             end
@@ -268,7 +262,7 @@ classdef DataAnalyzer < handle
 
                 % プロットの保存
                 grid on;
-                plotFileName = sprintf('%svs%s_%s_H_scatter.jpg', nameA, nameB, property);
+                plotFileName = sprintf('%svs%s_%s_scatter.jpg', nameA, nameB, property);
                 plotFullPath = fullfile(obj.ResultDir, plotFileName);
                 saveas(fig, plotFullPath);
                 fprintf('  -> 散布図を保存しました: %s\n', plotFullPath);
@@ -293,32 +287,7 @@ classdef DataAnalyzer < handle
 
                 % プロットの保存
                 grid on;
-                plotFileName = sprintf('%svs%s_%s_HM_scatter.jpg', nameA, nameB, property);
-                plotFullPath = fullfile(obj.ResultDir, plotFileName);
-                saveas(fig, plotFullPath);
-                fprintf('  -> 散布図を保存しました: %s\n', plotFullPath);
-            catch ME
-                close(fig);
-                rethrow(ME);
-            end
-            close(fig);
-        end
-        
-        function createAndSaveScatterPlot_HS(obj, dataA, dataB, hdrData, nameA, nameB, property, titleStr, amp, predictionDimention)
-            fig = figure('Visible', 'off');
-            try
-                tiledlayout(2,3,'TileSpacing', 'compact', 'Padding', 'compact');
-                for shape = 1:size(dataA,2)
-                    nexttile;
-                    PlotScatter_ver1(dataA(:,shape), dataB(:,shape), ...
-                               sprintf('%s-%s', nameA, property), ...
-                               sprintf('%s-%s', nameB, property), ...
-                               titleStr, hdrData, amp, predictionDimention);
-                end
-
-                % プロットの保存
-                grid on;
-                plotFileName = sprintf('%svs%s_%s_HS_scatter.jpg', nameA, nameB, property);
+                plotFileName = sprintf('%svs%s_%s_scatter.jpg', nameA, nameB, property);
                 plotFullPath = fullfile(obj.ResultDir, plotFileName);
                 saveas(fig, plotFullPath);
                 fprintf('  -> 散布図を保存しました: %s\n', plotFullPath);
