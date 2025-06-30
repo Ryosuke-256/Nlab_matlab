@@ -104,12 +104,11 @@ classdef DataAnalyzer < handle
                 % dataSpecA (struct): データセットAの仕様
                 %     - SetName:     DataSetsのキー名 (e.g., "Set-A")
                 %     - TargetData:  主データ名 (e.g., "ZsHM")
-                %     - DisplayName: プロットで表示する名前 (e.g., "銅")
                 % mode : 0:全コンディション、1:それぞれのコンディション
                 
             arguments
                 obj
-                dataSpec (1,1) struct {mustHaveFields(dataSpec, ["SetName", "TargetData", "DisplayName"])}
+                dataSpec (1,1) struct {mustHaveFields(dataSpec, ["SetName", "TargetData"])}
                 mode (1,1) double
             end
 
@@ -123,12 +122,12 @@ classdef DataAnalyzer < handle
                 % ヒストグラムの描画
                 fig = figure('Visible', 'off');
                 
-                PlotHistgram_Frequency(targetData_reshape(:),dataSpec.SetName, dataSpec.DisplayName);
+                PlotHistgram_Frequency(targetData_reshape(:),dataSpec.SetName);
                 
                 grid on;
 
                 % プロットの保存
-                plotFileName = sprintf('%s_%s_hist.jpg', dataSpec.SetName, dataSpec.DisplayName);
+                plotFileName = sprintf('%s_hist.jpg', dataSpec.SetName);
                 plotFullPath = fullfile(obj.ResultDir, plotFileName); 
 
                 saveas(fig, plotFullPath);
@@ -148,12 +147,12 @@ classdef DataAnalyzer < handle
                     for shape = 1:size(targetData_reshape,2)
                         nexttile;
                         
-                        PlotHistgram_Frequency(targetData_reshape(mat,shape,:),dataSpec.SetName, dataSpec.DisplayName);
+                        PlotHistgram_Frequency(targetData_reshape(mat,shape,:),dataSpec.SetName);
                         
                         grid on;
                     end
                     % プロットの保存
-                    plotFileName = sprintf('%s_%s_%s_hist.jpg', dataSpec.SetName, dataSpec.DisplayName,string(obj.MatNames3(mat)));
+                    plotFileName = sprintf('%s_%s_hist.jpg', dataSpec.SetName,string(obj.MatNames3(mat)));
                     plotFullPath = fullfile(obj.ResultDir, plotFileName); 
                     
                     saveas(fig, plotFullPath);
@@ -170,7 +169,6 @@ classdef DataAnalyzer < handle
             %     - SetName:     DataSetsのキー名 (e.g., "Set-A")
             %     - TargetData:  主データ名 (e.g., "ZsHM")
             %     - ErrorData:   エラーデータ名 (e.g., "error_ZsHM")
-            %     - DisplayName: プロットで表示する名前 (e.g., "銅")
             %
             %   dataSpecB (struct): データセットBの仕様 (dataSpecAと同様)
             %
@@ -183,11 +181,11 @@ classdef DataAnalyzer < handle
 
             arguments
                 obj
-                dataSpecA (1,1) struct {mustHaveFields(dataSpecA, ["SetName", "TargetData", "ErrorData", "DisplayName"])}
-                dataSpecB (1,1) struct {mustHaveFields(dataSpecB, ["SetName", "TargetData", "ErrorData", "DisplayName"])}
+                dataSpecA (1,1) struct {mustHaveFields(dataSpecA, ["SetName", "TargetData", "ErrorData"])}
+                dataSpecB (1,1) struct {mustHaveFields(dataSpecB, ["SetName", "TargetData", "ErrorData"])}
                 options.Property (1,1) string = "GRI"
                 options.HdrSet   (1,1) string {mustBeMember(options.HdrSet, ["HDRNum_15", "HDRNum_30"])} = "HDRNum_30"
-                options.Amp      (1,1) double {mustBeNumeric} = 1.5
+                options.Amp      (1,1) double {mustBeNumeric} = 1.0
                 options.PreDim   (1,1) double {mustBeNumeric} = 1
                 options.Mode     (1,1) double {mustBeNumeric} = 1
             end
@@ -203,34 +201,34 @@ classdef DataAnalyzer < handle
             hdrData = obj.(options.HdrSet);
             
             if options.Mode == 1
-                graphtitle = sprintf('%s vs %s about %s', dataSpecA.DisplayName, dataSpecB.DisplayName, options.Property);
+                graphtitle = sprintf('%s vs %s about %s', dataSpecA.SetName, dataSpecB.SetName, options.Property);
                 % --- 散布図の作成と保存 ---
                 obj.createAndSaveScatterPlot_H(targetDataA, targetDataB, hdrData, ...
-                    dataSpecA.DisplayName, dataSpecB.DisplayName, options.Property, graphtitle, options.Amp,options.PreDim);
+                    dataSpecA.SetName, dataSpecB.SetName, options.Property, graphtitle, options.Amp,options.PreDim);
 
                 % --- ヒストグラムの作成と保存 ---
                 obj.createAndSaveHistogram(targetDataA, errorDataA, targetDataB, errorDataB, ...
-                    hdrData, graphtitle, options.Amp, dataSpecA.DisplayName, dataSpecB.DisplayName, options.Property);
+                    hdrData, graphtitle, options.Amp, dataSpecA.SetName, dataSpecB.SetName, options.Property);
 
                 fprintf('プロットの作成が完了しました。\n');
                 
             elseif options.Mode == 2
-                graphtitle = sprintf('%s vs %s about %s', dataSpecA.DisplayName, dataSpecB.DisplayName, options.Property);
+                graphtitle = sprintf('%s vs %s about %s', dataSpecA.SetName, dataSpecB.SetName, options.Property);
                 % --- 散布図の作成と保存 ---
                 obj.createAndSaveScatterPlot_HM(targetDataA, targetDataB, hdrData, ...
-                    dataSpecA.DisplayName, dataSpecB.DisplayName, options.Property, graphtitle, options.Amp,options.PreDim);
+                    dataSpecA.SetName, dataSpecB.SetName, options.Property, graphtitle, options.Amp,options.PreDim);
                 
             elseif options.Mode == 3
-                graphtitle = sprintf('%s vs %s about %s', dataSpecA.DisplayName, dataSpecB.DisplayName, options.Property);
+                graphtitle = sprintf('%s vs %s about %s', dataSpecA.SetName, dataSpecB.SetName, options.Property);
                 % --- 散布図の作成と保存 ---
                 obj.createAndSaveScatterPlot_HS(targetDataA, targetDataB, hdrData, ...
-                    dataSpecA.DisplayName, dataSpecB.DisplayName, options.Property, graphtitle, options.Amp,options.PreDim);
+                    dataSpecA.SetName, dataSpecB.SetName, options.Property, graphtitle, options.Amp,options.PreDim);
                 
             elseif options.Mode == 4
-                graphtitle = sprintf('%s vs %s about %s', dataSpecA.DisplayName, dataSpecB.DisplayName, options.Property);
+                graphtitle = sprintf('%s vs %s about %s', dataSpecA.SetName, dataSpecB.SetName, options.Property);
                 % --- 散布図の作成と保存 ---
                 obj.createAndSaveScatterPlot_HMS(targetDataA, targetDataB, hdrData, ...
-                    dataSpecA.DisplayName, dataSpecB.DisplayName, options.Property, graphtitle, options.Amp,options.PreDim);
+                    dataSpecA.SetName, dataSpecB.SetName, options.Property, graphtitle, options.Amp,options.PreDim);
             end
         end
         
@@ -239,7 +237,6 @@ classdef DataAnalyzer < handle
             %   dataSpecA (struct): データセットAの仕様
             %     - SetName:     DataSetsのキー名 (e.g., "Set-A")
             %     - TargetData:  主データ名 (e.g., "ZsHM")
-            %     - DisplayName: プロットで表示する名前 (e.g., "銅")
             %
             %   dataSpecB (struct): データセットBの仕様 (dataSpecAと同様)
             %
@@ -247,14 +244,14 @@ classdef DataAnalyzer < handle
             %     - "Property" (string): 解析対象のプロパティ名 (グラフタイトル用, e.g., "反射率")
             %     - "Amp"      (double): 増幅係数 (デフォルト: 1.5)
             %     - "Bootstrap"(double): Bootstrapの反復回数 (デフォルト: 10000)
-            %     - "Mode"     (double): 1:H、2:HMS
+            %     - "Mode"     (double): 1:H、2:HM、3:HS、4:HMS
 
             arguments
                 obj
-                dataSpecA (1,1) struct {mustHaveFields(dataSpecA, ["SetName", "TargetData", "DisplayName"])}
-                dataSpecB (1,1) struct {mustHaveFields(dataSpecB, ["SetName", "TargetData", "DisplayName"])}
+                dataSpecA (1,1) struct {mustHaveFields(dataSpecA, ["SetName", "TargetData"])}
+                dataSpecB (1,1) struct {mustHaveFields(dataSpecB, ["SetName", "TargetData"])}
                 options.Property (1,1) string = "GRI"
-                options.Amp      (1,1) double {mustBeNumeric} = 1.5
+                options.Amp      (1,1) double {mustBeNumeric} = 1.0
                 options.Bootstrap(1,1) double {mustBeNumeric} = 10000
                 options.Mode     (1,1) double {mustBeNumeric} = 1
             end
@@ -266,30 +263,44 @@ classdef DataAnalyzer < handle
             targetDataB = obj.getDataFromSet(dataSpecB.SetName, dataSpecB.TargetData);
             
             if options.Mode == 1
-                graphtitle = sprintf('%s vs %s about %s\nCorrelaton Coefficient', dataSpecA.DisplayName, dataSpecB.DisplayName, options.Property);
+                graphtitle = sprintf('%s vs %s about %s\nCorrelaton Coefficient', dataSpecA.SetName, dataSpecB.SetName, options.Property);
                 
                 % --- 図の作成と保存 ---
-                obj.CorrBootstrap_H(targetDataA, targetDataB, dataSpecA.DisplayName, dataSpecB.DisplayName, ...
+                obj.CorrBootstrap_H(targetDataA, targetDataB, dataSpecA.SetName, dataSpecB.SetName, ...
                     options.Bootstrap, graphtitle, options.Amp, options.Property);
 
                 fprintf('プロットの作成が完了しました。\n');
                 
             elseif options.Mode == 2
-               
+                graphtitle = sprintf('%s vs %s about %s\nCorrelaton Coefficient', dataSpecA.SetName, dataSpecB.SetName, options.Property);
+                
                 % --- 図の作成と保存 ---
-                obj.CorrBootstrap_HMS(obj,targetDataA,targetDataB, dataSpecA.DisplayName, dataSpecB.DisplayName,...
+                obj.CorrBootstrap_HM(targetDataA, targetDataB, dataSpecA.SetName, dataSpecB.SetName, ...
+                    options.Bootstrap, graphtitle, options.Amp, options.Property);
+
+                fprintf('プロットの作成が完了しました。\n');
+            elseif options.Mode == 3
+                graphtitle = sprintf('%s vs %s about %s\nCorrelaton Coefficient', dataSpecA.SetName, dataSpecB.SetName, options.Property);
+                
+                % --- 図の作成と保存 ---
+                obj.CorrBootstrap_HS(targetDataA, targetDataB, dataSpecA.SetName, dataSpecB.SetName, ...
+                    options.Bootstrap, graphtitle, options.Amp, options.Property);
+
+                fprintf('プロットの作成が完了しました。\n');
+            elseif options.Mode == 4               
+                % --- 図の作成と保存 ---
+                obj.CorrBootstrap_HMS(targetDataA,targetDataB, dataSpecA.SetName, dataSpecB.SetName,...
                     options.Bootstrap, options.Amp);
                 
                 fprintf('プロットの作成が完了しました。\n');
             end
         end
         
-        function plotCorrBootstrap_model(obj,dataSpecA,dataSpecB,options)
+        function plotCorrBootstrap_model(obj,dataSpecA,dataSpecB,dataSpecC,options)
             % ■ 入力:
             %   dataSpecA (struct): データセットAの仕様
             %     - SetName:     DataSetsのキー名 (e.g., "Set-A")
             %     - TargetData:  主データ名 (e.g., "ZsHM")
-            %     - DisplayName: プロットで表示する名前 (e.g., "銅")
             %
             %   dataSpecB (struct): データセットBの仕様 (dataSpecAと同様)
             %
@@ -301,10 +312,11 @@ classdef DataAnalyzer < handle
 
             arguments
                 obj
-                dataSpecA (1,1) struct {mustHaveFields(dataSpecA, ["SetName", "TargetData", "DisplayName"])}
-                dataSpecB (1,1) struct {mustHaveFields(dataSpecB, ["SetName", "TargetData", "DisplayName"])}
+                dataSpecA (1,1) struct {mustHaveFields(dataSpecA, ["SetName", "TargetData"])}
+                dataSpecB (1,1) struct {mustHaveFields(dataSpecB, ["SetName", "TargetData"])}
+                dataSpecC (1,1) struct {mustHaveFields(dataSpecC, ["SetName", "TargetData"])}
                 options.Property (1,1) string = "GRI"
-                options.Amp      (1,1) double {mustBeNumeric} = 1.5
+                options.Amp      (1,1) double {mustBeNumeric} = 1.0
                 options.Bootstrap(1,1) double {mustBeNumeric} = 10000
                 options.Mode     (1,1) double {mustBeNumeric} = 1
             end
@@ -314,22 +326,14 @@ classdef DataAnalyzer < handle
             % --- データの抽出 (ヘルパーメソッドを利用) ---
             targetDataA = obj.getDataFromSet(dataSpecA.SetName, dataSpecA.TargetData);
             targetDataB = obj.getDataFromSet(dataSpecB.SetName, dataSpecB.TargetData);
+            targetDataC = obj.getDataFromSet(dataSpecC.SetName, dataSpecC.TargetData);
             
             if options.Mode == 1
-                graphtitle = sprintf('%s vs %s about %s\nCorrelaton Coefficient', dataSpecA.DisplayName, dataSpecB.DisplayName, options.Property);
-                
                 % --- 図の作成と保存 ---
-                obj.CorrBootstrap_H(targetDataA, targetDataB, dataSpecA.DisplayName, dataSpecB.DisplayName, ...
-                    options.Bootstrap, graphtitle, options.Amp, options.Property);
+                obj.CorrBootstrap_model_H(targetDataA, targetDataB, targetDataC,...
+                    dataSpecA.SetName, dataSpecB.SetName, dataSpecC.SetName, ...
+                    options.Bootstrap, options.Amp, options.Property);
 
-                fprintf('プロットの作成が完了しました。\n');
-                
-            elseif options.Mode == 2
-               
-                % --- 図の作成と保存 ---
-                obj.CorrBootstrap_HMS(obj,targetDataA,targetDataB, dataSpecA.DisplayName, dataSpecB.DisplayName,...
-                    options.Bootstrap, options.Amp);
-                
                 fprintf('プロットの作成が完了しました。\n');
             end
         end
@@ -486,19 +490,19 @@ classdef DataAnalyzer < handle
             dataA_reshaped = reshape(dataA,size(dataA,1),size(dataA,2),size(dataA,3),[]);
             dataB_reshaped = reshape(dataB,size(dataB,1),size(dataB,2),size(dataB,3),[]); 
 
-            [corrA,corrAB,correlationDiffs] = Corr_Significance(dataA_reshaped,dataB_reshaped,numBootstrap);
+            [corrA,corrAB,correlationDiffs] = Corr_Significance_H(dataA_reshaped,dataB_reshaped,numBootstrap);
 
             % 95%信頼区間の下限を確認
             sortedDiffs = sort(correlationDiffs);
             threshold = sortedDiffs(round(numBootstrap*0.05)); 
 
             % coef hisgram
-            x = obj.MeanArray(dataA);
-            y = obj.MeanArray(dataB);
+            x = obj.MeanArray(dataA,1);
+            y = obj.MeanArray(dataB,1);
             fig = figure('Visible', 'off');
             hold on;
 
-            Graph_Significance(x,y,corrA,corrAB,threshold,amp);
+            Graph_Significance_H(x,y,corrA,corrAB,threshold,amp);
 
             set(gca, 'XTick', []);
             title(titleStr,'FontSize',18*amp);
@@ -506,7 +510,59 @@ classdef DataAnalyzer < handle
             % プロットの保存
             grid on;
             hold off;
-            plotFileName = sprintf('%svs%s_%s_CorrCoef.jpg', nameA, nameB, property);
+            plotFileName = sprintf('%svs%s_%s_Significance_H.jpg', nameA, nameB, property);
+            plotFullPath = fullfile(obj.ResultDir, plotFileName);
+            saveas(fig, plotFullPath);
+            fprintf('  -> ヒストグラムを保存しました: %s\n', plotFullPath);
+        end
+        
+        function CorrBootstrap_HM(obj,dataA,dataB,nameA,nameB,numBootstrap,titleStr,amp,property)
+            dataA_reshaped = reshape(dataA,size(dataA,1),size(dataA,2),size(dataA,3),[]);
+            dataB_reshaped = reshape(dataB,size(dataB,1),size(dataB,2),size(dataB,3),[]); 
+
+            [corrA,corrAB,correlationDiffs,threshold] = Corr_Significance_HM(dataA_reshaped,dataB_reshaped,numBootstrap);
+
+            % coef hisgram
+            x = obj.MeanArray(dataA,2);
+            y = obj.MeanArray(dataB,2);
+            fig = figure('Visible', 'off');
+            hold on;
+
+            Graph_Significance_HM(x,y,corrA,corrAB,threshold,amp);
+
+            set(gca, 'XTick', []);
+            title(titleStr,'FontSize',18*amp);
+
+            % プロットの保存
+            grid on;
+            hold off;
+            plotFileName = sprintf('%svs%s_%s_Significance_HM.jpg', nameA, nameB, property);
+            plotFullPath = fullfile(obj.ResultDir, plotFileName);
+            saveas(fig, plotFullPath);
+            fprintf('  -> ヒストグラムを保存しました: %s\n', plotFullPath);
+        end
+        
+        function CorrBootstrap_HS(obj,dataA,dataB,nameA,nameB,numBootstrap,titleStr,amp,property)
+            dataA_reshaped = reshape(dataA,size(dataA,1),size(dataA,2),size(dataA,3),[]);
+            dataB_reshaped = reshape(dataB,size(dataB,1),size(dataB,2),size(dataB,3),[]); 
+
+            [corrA,corrAB,correlationDiffs,threshold] = Corr_Significance_HS(dataA_reshaped,dataB_reshaped,numBootstrap);
+
+            % coef hisgram
+            x = obj.MeanArray(dataA,2);
+            y = obj.MeanArray(dataB,2);
+            fig = figure('Visible', 'off');
+            hold on;
+
+            Graph_Significance_HS(x,y,corrA,corrAB,threshold,amp);
+
+            set(gca, 'XTick', []);
+            title(titleStr,'FontSize',18*amp);
+
+            % プロットの保存
+            grid on;
+            hold off;
+            plotFileName = sprintf('%svs%s_%s_Significance_HS.jpg', nameA, nameB, property);
             plotFullPath = fullfile(obj.ResultDir, plotFileName);
             saveas(fig, plotFullPath);
             fprintf('  -> ヒストグラムを保存しました: %s\n', plotFullPath);
@@ -516,18 +572,63 @@ classdef DataAnalyzer < handle
             dataA_reshaped = reshape(dataA,size(dataA,1),size(dataA,2),size(dataA,3),[]);
             dataB_reshaped = reshape(dataB,size(dataB,1),size(dataB,2),size(dataB,3),[]); 
 
-            [corrA,corrAB,correlationDiffs,threshold] = Corr_MatShape_Significance(dataA_reshaped,dataB_reshaped,numBootstrap);
+            [corrA,corrAB,correlationDiffs,threshold] = Corr_Significance_HMS(dataA_reshaped,dataB_reshaped,numBootstrap);
 
-            Graph_MatShape_Significance(mean(dataA_reshaped,4),mean(dataA_reshaped,4),corrA,corrAB,threshold,...
+            Graph_Significance_HMS(mean(dataA_reshaped,4),mean(dataB_reshaped,4),corrA,corrAB,threshold,...
                 nameA,nameB,numBootstrap,obj.MatNames1,obj.ShapeNames,obj.ResultDir,amp);
         end
         
-        function [reducedData] = MeanArray(obj,array)
+        function CorrBootstrap_model_H(obj,dataA,dataB,dataC,nameA,nameB,nameC,numBootstrap,amp,property)
+            dataA_reshaped = reshape(dataA,size(dataA,1),size(dataA,2),size(dataA,3),[]);
+            dataB_reshaped = reshape(dataB,size(dataB,1),size(dataB,2),size(dataB,3),[]); 
+
+            
+            % 95%信頼区間の下限を確認
+            [corrA,corrAB,correlationDiffs] = Corr_Significance_H(dataA_reshaped,dataB_reshaped,numBootstrap);
+            sortedDiffs = sort(correlationDiffs);
+            threshold = sortedDiffs(round(numBootstrap*0.05)); 
+
+            
+            % dataA vs model         
+            fig = figure('Visible', 'off');
+            hold on;
+
+            Graph_Significance_H(obj.MeanArray(dataA,1),dataC,corrA,corrAB,threshold,amp);
+
+            set(gca, 'XTick', []);
+            titleStr = sprintf('%s vs %s about %s\nCorrelaton Coefficient', nameA, nameC, property);
+            title(titleStr,'FontSize',18*amp);
+            grid on;
+            hold off;
+            plotFileName = sprintf('%svs%s_%s_Significance.jpg', nameA, nameC, property);
+            plotFullPath = fullfile(obj.ResultDir, plotFileName);
+            saveas(fig, plotFullPath);
+            fprintf('  -> 保存しました: %s\n', plotFullPath);
+            
+            
+            % dataB vs model         
+            fig = figure('Visible', 'off');
+            hold on;
+
+            Graph_Significance_H(obj.MeanArray(dataB,1),dataC,corrA,corrAB,threshold,amp);
+
+            set(gca, 'XTick', []);
+            titleStr = sprintf('%s vs %s about %s\nCorrelaton Coefficient', nameB, nameC, property);
+            title(titleStr,'FontSize',18*amp);
+            grid on;
+            hold off;
+            plotFileName = sprintf('%svs%s_%s_Significance.jpg', nameB, nameC, property);
+            plotFullPath = fullfile(obj.ResultDir, plotFileName);
+            saveas(fig, plotFullPath);
+            fprintf('  -> 保存しました: %s\n', plotFullPath);
+        end
+        
+        function [reducedData] = MeanArray(~,array,limit)
             dims = ndims(array);
 
             reducedData = array;
 
-            for d = dims:-1:2
+            for d = dims:-1:limit+1
                 reducedData = mean(reducedData, d);
             end
         end

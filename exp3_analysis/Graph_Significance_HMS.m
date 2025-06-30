@@ -1,8 +1,8 @@
-function [] = Graph_MatShape_Significance(dataA,dataB,corrA,corrAB,threshold,NameA,NameB,numBootstrap,MatNames,ShapeNames,savepath,amp)
+function [] = Graph_Significance_HMS(dataA,dataB,corrA,corrAB,threshold,NameA,NameB,numBootstrap,MatNames,ShapeNames,savepath,amp)
 [numIllumination,MatNum,ShapeNum,~] = size(dataA); % 照明環境の数
 
 for mat = 1:MatNum
-    figure;
+    fig = figure('Visible', 'off');
     hold on;
     for shape = 1:ShapeNum   
         % coef and slope
@@ -52,8 +52,8 @@ for mat = 1:MatNum
     text(x_Limits(1)*0.9,y_Limits(2)*0.95, '* : p < 0.05', 'FontSize', 15*amp);
     %legend([bar_coef, VR_bar,VR_95CI], {'Row data', 'VR bar','VR 95 CI'}, 'Location', 'best','Orientation','vertical');
     hold off;
-    plotname = sprintf('%s/%svs%s_Coefbar_%s.jpg',savepath, NameA,NameB,string(MatNames(mat)));
-    saveas(gcf, plotname);
+    plotname = sprintf('%s/%svs%s_Coefbar_HMS_%s.jpg',savepath, NameA,NameB,string(MatNames(mat)));
+    saveas(fig, plotname);
 end
 end
 

@@ -1,4 +1,4 @@
-function [corrA,corrAB,correlationDiffs] = Corr_Significance(dataA,dataB,bootstrap)
+function [corrA,corrAB,correlationDiffs] = Corr_Significance_H(dataA,dataB,bootstrap)
 %{
 データの準備
 dimsA = ndims(arrayA);

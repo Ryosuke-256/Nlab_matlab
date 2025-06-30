@@ -1,4 +1,4 @@
-function [corrA,corrAB,correlationDiffs,threshold] = Corr_MatShape_Significance(dataA,dataB,bootstrap)
+function [corrA,corrAB,correlationDiffs,threshold] = Corr_Significance_HMS(dataA,dataB,bootstrap)
 numBootstrap = bootstrap; 
 [numIllumination,MatNum,ShapeNum,~] = size(dataA); % 照明環境の数
 illumDim = 1;

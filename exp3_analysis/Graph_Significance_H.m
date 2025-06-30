@@ -1,8 +1,7 @@
-function [] = Graph_Significance(dataA,dataB,corrA,corrAB,threshold,amp)
+function [] = Graph_Significance_H(dataA,dataB,corrA,corrAB,threshold,amp)
 x = dataA;
 y = dataB;
-r = corr(x,y);
-r_value = r;
+r_value  = corr(x,y);
 
 % coef hisgram
 %hold on;
@@ -24,7 +23,7 @@ if threshold > 0
     text(1,(abs(r_value)+0.12)*r_value/abs(r_value),graphtext3,'HorizontalAlignment','center','VerticalAlignment','bottom','FontSize',12*amp);
 end
 
-ylim([0.7,1.1]);
+ylim([0.0,1.1]);
 y_Limits = ylim;
 x_Limits = xlim;
 maxorigin = max(corrA);
