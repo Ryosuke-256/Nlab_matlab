@@ -113,7 +113,7 @@ classdef DataAnalyzer < handle
                 mode (1,1) double
             end
 
-            targetData = obj.getDataFromSet(dataSpec.SetName,dataSpec,TargetData);
+            targetData = obj.getDataFromSet(dataSpec.SetName,dataSpec.TargetData);
             
             if mode == 0
                 %全コンディションモード
@@ -227,10 +227,63 @@ classdef DataAnalyzer < handle
                     dataSpecA.DisplayName, dataSpecB.DisplayName, options.Property, graphtitle, options.Amp,options.PreDim);
                 
             elseif options.Mode == 4
-                
+                graphtitle = sprintf('%s vs %s about %s', dataSpecA.DisplayName, dataSpecB.DisplayName, options.Property);
+                % --- 散布図の作成と保存 ---
+                obj.createAndSaveScatterPlot_HMS(targetDataA, targetDataB, hdrData, ...
+                    dataSpecA.DisplayName, dataSpecB.DisplayName, options.Property, graphtitle, options.Amp,options.PreDim);
             end
         end
         
+        function plotCorrBootstrap(obj,dataSpecA,dataSpecB,options)
+            % ■ 入力:
+            %   dataSpecA (struct): データセットAの仕様
+            %     - SetName:     DataSetsのキー名 (e.g., "Set-A")
+            %     - TargetData:  主データ名 (e.g., "ZsHM")
+            %     - DisplayName: プロットで表示する名前 (e.g., "銅")
+            %
+            %   dataSpecB (struct): データセットBの仕様 (dataSpecAと同様)
+            %
+            %   options (名前/値ペア):
+            %     - "Property" (string): 解析対象のプロパティ名 (グラフタイトル用, e.g., "反射率")
+            %     - "Amp"      (double): 増幅係数 (デフォルト: 1.5)
+            %     - "Bootstrap"(double): Bootstrapの反復回数 (デフォルト: 10000)
+            %     - "Mode"     (double): 1:H、2:HMS
+
+            arguments
+                obj
+                dataSpecA (1,1) struct {mustHaveFields(dataSpecA, ["SetName", "TargetData", "DisplayName"])}
+                dataSpecB (1,1) struct {mustHaveFields(dataSpecB, ["SetName", "TargetData", "DisplayName"])}
+                options.Property (1,1) string = "GRI"
+                options.Amp      (1,1) double {mustBeNumeric} = 1.5
+                options.Bootstrap(1,1) double {mustBeNumeric} = 10000
+                options.Mode     (1,1) double {mustBeNumeric} = 1
+            end
+            
+            fprintf('相関係数のBootstrap...\n');
+
+            % --- データの抽出 (ヘルパーメソッドを利用) ---
+            targetDataA = obj.getDataFromSet(dataSpecA.SetName, dataSpecA.TargetData);
+            targetDataB = obj.getDataFromSet(dataSpecB.SetName, dataSpecB.TargetData);
+            
+            if options.Mode == 1
+                graphtitle = sprintf('%s vs %s about %s\nCorrelaton Coefficient', dataSpecA.DisplayName, dataSpecB.DisplayName, options.Property);
+                
+                % --- 図の作成と保存 ---
+                obj.CorrBootstrap_H(targetDataA, targetDataB, dataSpecA.DisplayName, dataSpecB.DisplayName, ...
+                    options.Bootstrap, graphtitle, options.Amp, options.Property);
+
+                fprintf('プロットの作成が完了しました。\n');
+                
+            elseif options.Mode == 2
+                graphtitle = sprintf('%s vs %s about %s\nCorrelaton Coefficient', dataSpecA.DisplayName, dataSpecB.DisplayName, options.Property);
+                
+                % --- 図の作成と保存 ---
+                obj.createAndSaveScatterPlot_HM(targetDataA, targetDataB, hdrData, ...
+                    dataSpecA.DisplayName, dataSpecB.DisplayName, options.Property, graphtitle, options.Amp,options.PreDim);
+                
+                fprintf('プロットの作成が完了しました。\n');
+            end
+        end
     end
     
     % --- 内部ヘルパーメソッド ---
@@ -332,6 +385,33 @@ classdef DataAnalyzer < handle
             end
             close(fig);
         end
+        
+        function createAndSaveScatterPlot_HMS(obj, dataA, dataB, hdrData, nameA, nameB, property, titleStr, amp, predictionDimention)
+            try
+                for mat = 1:size(dataA,2)
+                    fig = figure('Visible', 'off');
+                    tiledlayout(2,3,'TileSpacing', 'compact', 'Padding', 'compact');
+                    for shape = 1:size(dataA,3)
+                        nexttile;
+                        title = sprintf('%s\n%s',titleStr,string(obj.MatNames3(mat)));
+                        PlotScatter_ver1(dataA(:,mat,shape),dataB(:,mat,shape), ...                             
+                                    sprintf('%s-%s', nameA, property), ...
+                                    sprintf('%s-%s', nameB, property), ...
+                                    title, hdrData, amp, predictionDimention);
+                    end                   
+                    % プロットの保存
+                    grid on;
+                    plotFileName = sprintf('%svs%s_%s_HMS_%s_scatter.jpg', nameA, nameB, property,string(obj.MatNames3(mat)));
+                    plotFullPath = fullfile(obj.ResultDir, plotFileName);
+                    saveas(fig, plotFullPath);
+                    fprintf('  -> 散布図を保存しました: %s\n', plotFullPath);
+                    
+                    close(fig);
+                end
+            catch ME
+                rethrow(ME);
+            end
+        end
 
         % --- ヒストグラムを作成・保存  ---
         function createAndSaveHistogram(obj, dataA, errA, dataB, errB, hdrData, titleStr, amp, nameA, nameB, property)
@@ -351,6 +431,46 @@ classdef DataAnalyzer < handle
                 rethrow(ME);
             end
             close(fig);
+        end
+        
+        function CorrBootstrap_H(obj,dataA,dataB,nameA,nameB,numBootstrap,titleStr,amp,property)
+            dataA_reshaped = reshape(dataA,size(dataA,1),size(dataA,2),size(dataA,3),[]);
+            dataB_reshaped = reshape(dataB,size(dataB,1),size(dataB,2),size(dataB,3),[]); 
+
+            [corrA,corrAB,correlationDiffs] = Corr_Significance(dataA_reshaped,dataB_reshaped,numBootstrap);
+
+            % 95%信頼区間の下限を確認
+            sortedDiffs = sort(correlationDiffs);
+            threshold = sortedDiffs(round(numBootstrap*0.05)); 
+
+            % coef hisgram
+            x = obj.MeanArray(dataA);
+            y = obj.MeanArray(dataB);
+            fig = figure('Visible', 'off');
+            hold on;
+
+            Graph_Significance(x,y,corrA,corrAB,threshold,amp);
+
+            set(gca, 'XTick', []);
+            title(titleStr,'FontSize',18*amp);
+
+            % プロットの保存
+            grid on;
+            hold off;
+            plotFileName = sprintf('%svs%s_%s_CorrCoef.jpg', nameA, nameB, property);
+            plotFullPath = fullfile(obj.ResultDir, plotFileName);
+            saveas(fig, plotFullPath);
+            fprintf('  -> ヒストグラムを保存しました: %s\n', plotFullPath);
+        end
+        
+        function [reducedData] = MeanArray(obj,array)
+            dims = ndims(array);
+
+            reducedData = array;
+
+            for d = dims:-1:2
+                reducedData = mean(reducedData, d);
+            end
         end
     end
 end
