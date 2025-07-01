@@ -49,7 +49,7 @@ classdef DataAnalyzer < handle
     % メソッド定義
     %======================================================================
     methods
-        % --- コンストラクタ ---
+        %% --- コンストラクタ ---
         function obj = DataAnalyzer(resultDir, varargin)
             % インスタンスを作成し、複数のデータセットをロードします。
             %
@@ -98,7 +98,7 @@ classdef DataAnalyzer < handle
             fprintf('インスタンスの作成が完了しました。\n');
         end
         
-        % ---頻度ヒストグラム　---
+        %% ---頻度ヒストグラム　---
         function plotHistogram(obj, dataSpec, mode)
             % 入力:
                 % dataSpecA (struct): データセットAの仕様
@@ -162,7 +162,7 @@ classdef DataAnalyzer < handle
             end
         end
         
-        % --- 最適化された散布図プロットメソッド ---
+        %%--- 散布図プロットメソッド ---
         function plotScatter(obj, dataSpecA, dataSpecB, options)
             % ■ 入力:
             %   dataSpecA (struct): データセットAの仕様
@@ -232,6 +232,7 @@ classdef DataAnalyzer < handle
             end
         end
         
+        %% 2つのデータの相関係数をプロット
         function plotCorrBootstrap(obj,dataSpecA,dataSpecB,options)
             % ■ 入力:
             %   dataSpecA (struct): データセットAの仕様
@@ -296,6 +297,7 @@ classdef DataAnalyzer < handle
             end
         end
         
+        %% 照明モデルに対する相関係数のBootstrapをプロット
         function plotCorrBootstrap_model(obj,dataSpecA,dataSpecB,dataSpecC,options)
             % ■ 入力:
             %   dataSpecA (struct): データセットAの仕様
@@ -338,6 +340,7 @@ classdef DataAnalyzer < handle
             end
         end
         
+        %% 残差の折れ線グラフをプロット
         function plotResiduals(obj, dataSpecA, dataSpecB, options)
             % 2つのデータセットから指定されたデータを取得し、その残差を計算・プロットします。
             arguments
@@ -385,7 +388,7 @@ classdef DataAnalyzer < handle
             end
         end
         
-        % --- 指定されたデータセットからデータを取得 ---
+        %% --- 指定されたデータセットからデータを取得 ---
         function data = getDataFromSet(obj, setName, dataName)
             % データセットとデータの存在をチェックしてデータを返す
             if ~isKey(obj.DataSets, setName)
@@ -398,7 +401,7 @@ classdef DataAnalyzer < handle
             data = dataSet.(dataName);
         end
 
-        % --- 散布図  ---
+        %% --- 散布図  ---
         function createAndSaveScatterPlot_H(obj, dataA, dataB, hdrData, nameA, nameB, property, titleStr, amp, predictionDimention)
             fig = figure('Visible', 'off');
             try
@@ -420,6 +423,7 @@ classdef DataAnalyzer < handle
             close(fig);
         end
         
+        %%
         function createAndSaveScatterPlot_HM(obj, dataA, dataB, hdrData, nameA, nameB, property, titleStr, amp, predictionDimention)
             fig = figure('Visible', 'off');
             try
@@ -445,6 +449,7 @@ classdef DataAnalyzer < handle
             close(fig);
         end
         
+        %%
         function createAndSaveScatterPlot_HS(obj, dataA, dataB, hdrData, nameA, nameB, property, titleStr, amp, predictionDimention)
             fig = figure('Visible', 'off');
             try
@@ -470,6 +475,7 @@ classdef DataAnalyzer < handle
             close(fig);
         end
         
+        %%
         function createAndSaveScatterPlot_HMS(obj, dataA, dataB, hdrData, nameA, nameB, property, titleStr, amp, predictionDimention)
             try
                 for mat = 1:size(dataA,2)
@@ -497,7 +503,7 @@ classdef DataAnalyzer < handle
             end
         end
 
-        % --- ヒストグラムを作成・保存  ---
+        %% --- ヒストグラムを作成・保存  ---
         function createAndSaveHistogram(obj, dataA, errA, dataB, errB, hdrData, titleStr, amp, nameA, nameB, property)
             fig = figure('Visible', 'off');
             try
@@ -517,6 +523,7 @@ classdef DataAnalyzer < handle
             close(fig);
         end
         
+        %%
         function CorrBootstrap_H(obj,dataA,dataB,nameA,nameB,numBootstrap,titleStr,amp,property)
             dataA_reshaped = reshape(dataA,size(dataA,1),size(dataA,2),size(dataA,3),[]);
             dataB_reshaped = reshape(dataB,size(dataB,1),size(dataB,2),size(dataB,3),[]); 
@@ -547,6 +554,7 @@ classdef DataAnalyzer < handle
             fprintf('  -> ヒストグラムを保存しました: %s\n', plotFullPath);
         end
         
+        %%
         function CorrBootstrap_HM(obj,dataA,dataB,nameA,nameB,numBootstrap,titleStr,amp,property)
             dataA_reshaped = reshape(dataA,size(dataA,1),size(dataA,2),size(dataA,3),[]);
             dataB_reshaped = reshape(dataB,size(dataB,1),size(dataB,2),size(dataB,3),[]); 
@@ -574,6 +582,7 @@ classdef DataAnalyzer < handle
             fprintf('  -> ヒストグラムを保存しました: %s\n', plotFullPath);
         end
         
+        %%
         function CorrBootstrap_HS(obj,dataA,dataB,nameA,nameB,numBootstrap,titleStr,amp,property)
             dataA_reshaped = permute(reshape(dataA,size(dataA,1),size(dataA,2),size(dataA,3),[]),[1,3,2,4]);
             dataB_reshaped = permute(reshape(dataB,size(dataB,1),size(dataB,2),size(dataB,3),[]),[1,3,2,4]); 
@@ -601,6 +610,7 @@ classdef DataAnalyzer < handle
             fprintf('  -> ヒストグラムを保存しました: %s\n', plotFullPath);
         end
         
+        %%
         function CorrBootstrap_HMS(obj,dataA,dataB,nameA,nameB,numBootstrap,amp)
             dataA_reshaped = reshape(dataA,size(dataA,1),size(dataA,2),size(dataA,3),[]);
             dataB_reshaped = reshape(dataB,size(dataB,1),size(dataB,2),size(dataB,3),[]); 
@@ -611,6 +621,7 @@ classdef DataAnalyzer < handle
                 nameA,nameB,numBootstrap,obj.MatNames1,obj.ShapeNames,obj.ResultDir,amp);
         end
         
+        %%
         function CorrBootstrap_model_H(obj,dataA,dataB,dataC,nameA,nameB,nameC,numBootstrap,amp,property)
             dataA_reshaped = reshape(dataA,size(dataA,1),size(dataA,2),size(dataA,3),[]);
             dataB_reshaped = reshape(dataB,size(dataB,1),size(dataB,2),size(dataB,3),[]); 
@@ -656,6 +667,7 @@ classdef DataAnalyzer < handle
             fprintf('  -> 保存しました: %s\n', plotFullPath);
         end
         
+        %%
         function [reducedData] = MeanArray(~,array,limit)
             dims = ndims(array);
 
