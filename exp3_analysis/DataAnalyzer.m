@@ -337,6 +337,37 @@ classdef DataAnalyzer < handle
                 fprintf('プロットの作成が完了しました。\n');
             end
         end
+        
+        function plotResiduals(obj, dataSpecA, dataSpecB, options)
+            % 2つのデータセットから指定されたデータを取得し、その残差を計算・プロットします。
+            arguments
+                obj
+                dataSpecA (1,1) struct {mustHaveFields(dataSpecA, ["SetName", "TargetData"])}
+                dataSpecB (1,1) struct {mustHaveFields(dataSpecB, ["SetName", "TargetData"])}
+                options.Property (1,1) string = "GRI"
+                options.Amp      (1,1) double {mustBeNumeric} = 1.0
+                options.Save     (1,1)logical = true
+                options.Mode     (1,1) double {mustBeNumeric} = 1
+            end
+
+            fprintf('残差プロットを作成しています...\n');
+
+            % --- 1. データの抽出と検証 ---
+            data1 = obj.getDataFromSet(dataSpecA.SetName, dataSpecA.TargetData);
+            data2 = obj.getDataFromSet(dataSpecB.SetName, dataSpecB.TargetData);
+
+            if numel(data1) ~= numel(data2)
+                error('比較する2つのデータの要素数が異なります。');
+            end
+
+            % --- 2. 残差の計算 ---
+            residuals = data1 - data2;
+            fprintf('残差の平均: %.4f\n', mean(residuals));
+            fprintf('残差の標準偏差: %.4f\n', std(residuals));
+
+            % --- 3. ヘルパー関数を呼び出してプロットと保存を実行 ---
+            obj.generateResidualPlot(residuals, dataSpecA, dataSpecB, options);
+        end
     end
     
     % --- 内部ヘルパーメソッド ---
@@ -632,6 +663,128 @@ classdef DataAnalyzer < handle
 
             for d = dims:-1:limit+1
                 reducedData = mean(reducedData, d);
+            end
+        end
+        
+        %% 残差データを受け取り、グラフの作成と保存を行うヘルパー関数
+        function generateResidualPlot(obj, residuals, dataSpec1, dataSpec2, options)
+            % データが3次元配列かチェック
+            if ndims(residuals) < 3
+                % 2次元以下のデータはシンプルな単一プロットを作成
+                obj.createSingleResidualPlot(residuals, dataSpec1, dataSpec2, options);
+            else
+                % 3次元のデータはタイル表示プロットを作成
+                obj.createTiledResidualPlot(residuals, dataSpec1, dataSpec2, options);
+            end
+        end
+
+        %% --- 単一の残差プロットを作成する新しいヘルパー関数 ---
+        function createSingleResidualPlot(obj, residuals, dataSpec1, dataSpec2, options)
+            try
+                fig = figure('Visible', 'off');
+                hold on;
+                
+                % 3次元目(shape)でループして、同一グラフにプロット
+                for i = 1:size(residuals, 2)
+                    data_slice = residuals(:,i);
+                    plot(1:numel(data_slice), data_slice, '-o', 'LineWidth', 0.75);
+                end
+                
+                hold off;
+                grid on; box on; axis tight;
+                
+                switch options.Mode
+                    case 1
+                        legend('Location', 'best','FontSize',3*options.Amp);
+                        titleKind = 'All';
+                    case 2
+                        legend([obj.MatNames3], 'Location', 'best', 'Interpreter', 'none','FontSize',3*options.Amp);
+                        titleKind = 'Material';
+                    case 3
+                        legend([obj.ShapeNames], 'Location', 'best', 'Interpreter', 'none','FontSize',3*options.Amp);
+                        titleKind = 'Shape';
+                end
+
+                titleStr = sprintf('%s vs %s about %s\nResiduals_%s', dataSpec1.SetName, dataSpec2.SetName, options.Property,titleKind);
+                title(titleStr, 'Interpreter', 'none','FontSize',12*options.Amp);
+                xlabel('Illumination', 'Interpreter', 'none','FontSize',12*options.Amp);
+                ylabel('Residuals', 'Interpreter', 'none','FontSize',12*options.Amp);
+                grid on; box on; axis tight;
+                
+                x = 1:length(obj.HDRNum_30);
+                set(gca, 'XTick', x);
+                xticklabels(obj.HDRNum_30);
+                xtickangle(90);
+                set(gca,'FontSize',6 * options.Amp);
+                
+                ymax = max(abs(residuals),[],'all')*1.1;
+                ylim([-ymax ymax]);
+
+                if options.Save
+                    plotFileName = sprintf('%svs%s_%s_%s_residual.jpg', ...
+                                           dataSpec1.SetName, dataSpec2.SetName, options.Property,titleKind);
+                    plotFullPath = fullfile(obj.ResultDir, plotFileName);
+                    saveas(fig, plotFullPath);
+                    fprintf('  -> 残差プロットを保存しました: %s\n', plotFullPath);
+                else
+                    set(fig, 'Visible', 'on');
+                end
+            catch ME
+                rethrow(ME);
+            end
+        end
+
+        %% --- タイル表示の残差プロットを作成する新しいヘルパー関数 ---
+        function createTiledResidualPlot(obj, residuals, dataSpec1, dataSpec2, options)
+            % 2次元目(mat)でループして、Figureを個別に作成
+            for mat = 1:size(residuals, 2)
+                fig = []; % エラーに備えて初期化
+                try
+                    fig = figure('Visible', 'off');
+                    hold on;
+
+                    % 3次元目(shape)でループして、同一グラフにプロット
+                    for shape = 1:size(residuals, 3)
+                        data_slice = residuals(:, mat, shape);
+                        plot(1:numel(data_slice), data_slice, '-o', 'LineWidth', 0.75);
+                    end
+
+                    hold off;
+
+                    grid on; box on; axis tight;
+
+                    legend([obj.ShapeNames], 'Location', 'best', 'Interpreter', 'none','FontSize',3*options.Amp);
+
+                    titleStr = sprintf('%s vs %s about %s\nResiduals_%s', dataSpec1.SetName, dataSpec2.SetName, options.Property,string(obj.MatNames3(mat)));
+                    title(titleStr, 'Interpreter', 'none','FontSize',12*options.Amp);
+                    xlabel('Illumination', 'Interpreter', 'none','FontSize',12*options.Amp);
+                    ylabel('Residuals', 'Interpreter', 'none','FontSize',12*options.Amp);
+                    grid on; box on; axis tight;
+                    legend('Location', 'best');
+
+                    x = 1:length(obj.HDRNum_30);
+                    set(gca, 'XTick', x);
+                    xticklabels(obj.HDRNum_30);
+                    xtickangle(90);
+                    set(gca,'FontSize',6 * options.Amp);
+
+                    ymax = max(abs(residuals),[],'all')*1.1;
+                    ylim([-ymax ymax]);
+
+                    % 保存または表示                   
+                    if options.Save
+                        plotFileName = sprintf('%svs%s_%s_residual_%s.jpg', ...
+                                               dataSpec1.SetName, dataSpec2.SetName, options.Property,string(obj.MatNames3(mat)));
+                        plotFullPath = fullfile(obj.ResultDir, plotFileName);
+                        saveas(fig, plotFullPath);
+                        fprintf('  -> 残差プロットを保存しました: %s\n', plotFullPath);
+                    else
+                        set(fig, 'Visible', 'on');
+                    end
+
+                catch ME
+                    rethrow(ME);
+                end
             end
         end
     end
