@@ -578,7 +578,8 @@ classdef DataAnalyzer < handle
 
             Graph_Significance_MS(x,y,corrA,corrAB,threshold,amp,MatNum);
 
-            set(gca, 'XTick', []);
+            set(gca, 'XTick', 1:length(obj.MatNames3));
+            xticklabels(obj.MatNames3);
             title(titleStr,'FontSize',18*amp);
 
             % プロットの保存
@@ -605,7 +606,8 @@ classdef DataAnalyzer < handle
 
             Graph_Significance_MS(x,y,corrA,corrAB,threshold,amp,ShapeNum);
 
-            set(gca, 'XTick', []);
+            set(gca, 'XTick', 1:length(obj.ShapeNames));
+            xticklabels(obj.ShapeNames);
             title(titleStr,'FontSize',18*amp);
 
             % プロットの保存
