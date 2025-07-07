@@ -5,7 +5,7 @@ function [Outlinear_Points] = Outlinear_Detection(array1,array2,threshold,coef_l
     xmax = max(abs(x));
     ymax = max(abs(y));
     xmin = min(x);
-    ymin = min(y);
+    ymin = min(y);Nlab_matlab
 
     point_labels = 1:n;
     Outlinear_Points = zeros(size(x));

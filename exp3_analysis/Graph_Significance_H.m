@@ -4,7 +4,7 @@ y = dataB;
 r_value  = corr(x,y);
 
 % coef hisgram
-%hold on;
+hold on;
 x_axis = 1;
 bar_width = 0.4;
 bar_coef = bar(x_axis,r_value,bar_width, 'FaceColor', 'b', 'DisplayName', 'Coef');
@@ -37,12 +37,6 @@ bar_plot = yline(aveorigin, 'k--', 'LineWidth', 1.2, 'DisplayName', 'Within-subj
 
 text(x_Limits(1)*0.9,y_Limits(2)*0.95, '* : p < 0.05', 'FontSize', 15*amp);
 ylabel('Correlation Coefficient','FontSize',18*amp);
-%{
-set(gca, 'XTick', []);
-ylabel('Correlation Coefficient','FontSize',18*amp);
-title(graphtitle,'FontSize',18*amp);
-text(x_Limits(1)*0.9,y_Limits(2)*0.95, '* : p < 0.05', 'FontSize', 15*amp);
-grid on;
+
 hold off;
-%}
 end

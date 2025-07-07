@@ -1,9 +1,7 @@
 function [] = Graph_Significance_MS(dataA,dataB,corrA,corrAB,threshold,amp,repeater)
 
 for i = 1:repeater
-    x = dataA(:,i);
-    y = dataB(:,i);
-    r_value  = corr(x,y);
+    r_value  = corr(dataA(:,i),dataB(:,i));
 
     % coef hisgram
     hold on;
@@ -39,5 +37,6 @@ for i = 1:repeater
 
     text(x_Limits(1)*0.9,y_Limits(2)*0.95, '* : p < 0.05', 'FontSize', 15*amp);
     ylabel('Correlation Coefficient','FontSize',18*amp);
+    hold off;
 end
 end

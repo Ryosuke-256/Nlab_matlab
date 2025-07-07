@@ -1,12 +1,4 @@
 function [corrA,corrAB,correlationDiffs] = Corr_Significance_H(dataA,dataB,bootstrap)
-%{
-データの準備
-dimsA = ndims(arrayA);
-dataA = reshape(arrayA,dimsA(1:reshapeNum),[]);
-dimsB = ndims(arrayB);
-dataB = reshape(arrayB,dimsB(1:reshapeNum),[]);
-%}
-
 numBootstrap = bootstrap; 
 illumDim = 1;
 
@@ -35,6 +27,21 @@ for i = 1:numBootstrap
 
     % === 3. 相関係数の差を計算 ===
     correlationDiffs(i) = corrA(i) - corrAB(i);
+end
+
+% === 4. 有意差の判定 ===
+% 相関係数の差を昇順に並べる
+sortedDiffs = sort(correlationDiffs);
+% 95%信頼区間の下限を確認
+disp(round(numBootstrap*0.05));
+threshold = sortedDiffs(round(numBootstrap*0.05)); 
+fprintf('threshold : %s',threshold);
+
+p_value = 2 * min(sum(correlationDiffs > 0), sum(correlationDiffs < 0)) / numBootstrap;
+if p_value < 0.05
+    disp('AとBに有意差があります（p < 0.05）');
+else
+    disp('AとBに有意差はありません（p >= 0.05）');
 end
 end
 

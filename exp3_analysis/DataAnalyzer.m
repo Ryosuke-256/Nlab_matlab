@@ -161,9 +161,8 @@ classdef DataAnalyzer < handle
                 end
             end
         end
-        
-        %%--- 散布図プロットメソッド ---
-        function plotScatter(obj, dataSpecA, dataSpecB, options)
+              
+        function plotScatter(obj, dataSpecA, dataSpecB, options)            
             % ■ 入力:
             %   dataSpecA (struct): データセットAの仕様
             %     - SetName:     DataSetsのキー名 (e.g., "Set-A")
@@ -187,53 +186,33 @@ classdef DataAnalyzer < handle
                 options.HdrSet   (1,1) string {mustBeMember(options.HdrSet, ["HDRNum_15", "HDRNum_30"])} = "HDRNum_30"
                 options.Amp      (1,1) double {mustBeNumeric} = 1.0
                 options.PreDim   (1,1) double {mustBeNumeric} = 1
-                options.Mode     (1,1) double {mustBeNumeric} = 1
+                options.Mode (1,1) string {mustBeMember(options.Mode, ["H", "HM", "HS", "HMS"])} = "H"
             end
 
-            fprintf('散布図とヒストグラムの作成を開始します...\n');
+            fprintf('散布図の作成を開始します...\n');
 
-            % --- データの抽出 (ヘルパーメソッドを利用) ---
-            targetDataA = obj.getDataFromSet(dataSpecA.SetName, dataSpecA.TargetData);
-            errorDataA  = obj.getDataFromSet(dataSpecA.SetName, dataSpecA.ErrorData);
-            targetDataB = obj.getDataFromSet(dataSpecB.SetName, dataSpecB.TargetData);
-            errorDataB  = obj.getDataFromSet(dataSpecB.SetName, dataSpecB.ErrorData);
+            % --- 1. データの準備 ---
+            % 描画に必要なデータを構造体にまとめる
+            plotData.targetA = obj.getDataFromSet(dataSpecA.SetName, dataSpecA.TargetData);
+            plotData.errorA  = obj.getDataFromSet(dataSpecA.SetName, dataSpecA.ErrorData);
+            plotData.targetB = obj.getDataFromSet(dataSpecB.SetName, dataSpecB.TargetData);
+            plotData.errorB  = obj.getDataFromSet(dataSpecB.SetName, dataSpecB.ErrorData);
+            plotData.hdr     = obj.(options.HdrSet);
 
-            hdrData = obj.(options.HdrSet);
-            
-            if options.Mode == 1
-                graphtitle = sprintf('%s vs %s about %s', dataSpecA.SetName, dataSpecB.SetName, options.Property);
-                % --- 散布図の作成と保存 ---
-                obj.createAndSaveScatterPlot_H(targetDataA, targetDataB, hdrData, ...
-                    dataSpecA.SetName, dataSpecB.SetName, options.Property, graphtitle, options.Amp,options.PreDim);
+            % 描画オプションを構造体にまとめる
+            plotOptions = options;
+            plotOptions.NameA = dataSpecA.SetName;
+            plotOptions.NameB = dataSpecB.SetName;
+            plotOptions.Title = sprintf('%s vs %s about %s', plotOptions.NameA, plotOptions.NameB, plotOptions.Property);
 
-                % --- ヒストグラムの作成と保存 ---
-                obj.createAndSaveHistogram(targetDataA, errorDataA, targetDataB, errorDataB, ...
-                    hdrData, graphtitle, options.Amp, dataSpecA.SetName, dataSpecB.SetName, options.Property);
+            % --- 2. 統合されたヘルパー関数を呼び出す ---
+            obj.generateScatterPlot(plotData, plotOptions);
 
-                fprintf('プロットの作成が完了しました。\n');
-                
-            elseif options.Mode == 2
-                graphtitle = sprintf('%s vs %s about %s', dataSpecA.SetName, dataSpecB.SetName, options.Property);
-                % --- 散布図の作成と保存 ---
-                obj.createAndSaveScatterPlot_HM(targetDataA, targetDataB, hdrData, ...
-                    dataSpecA.SetName, dataSpecB.SetName, options.Property, graphtitle, options.Amp,options.PreDim);
-                
-            elseif options.Mode == 3
-                graphtitle = sprintf('%s vs %s about %s', dataSpecA.SetName, dataSpecB.SetName, options.Property);
-                % --- 散布図の作成と保存 ---
-                obj.createAndSaveScatterPlot_HS(targetDataA, targetDataB, hdrData, ...
-                    dataSpecA.SetName, dataSpecB.SetName, options.Property, graphtitle, options.Amp,options.PreDim);
-                
-            elseif options.Mode == 4
-                graphtitle = sprintf('%s vs %s about %s', dataSpecA.SetName, dataSpecB.SetName, options.Property);
-                % --- 散布図の作成と保存 ---
-                obj.createAndSaveScatterPlot_HMS(targetDataA, targetDataB, hdrData, ...
-                    dataSpecA.SetName, dataSpecB.SetName, options.Property, graphtitle, options.Amp,options.PreDim);
-            end
+            fprintf('プロットの作成が完了しました。\n');
         end
         
-        %% 2つのデータの相関係数をプロット
-        function plotCorrBootstrap(obj,dataSpecA,dataSpecB,options)
+        %% 相関係数のBootstrap
+        function plotCorrBootstrap_old(obj,dataSpecA,dataSpecB,options)
             % ■ 入力:
             %   dataSpecA (struct): データセットAの仕様
             %     - SetName:     DataSetsのキー名 (e.g., "Set-A")
@@ -295,6 +274,50 @@ classdef DataAnalyzer < handle
                 
                 fprintf('プロットの作成が完了しました。\n');
             end
+        end
+        
+        function plotCorrBootstrap(obj, dataSpecA, dataSpecB, options)
+            % ■ 入力:
+            %   dataSpecA (struct): データセットAの仕様
+            %     - SetName:     DataSetsのキー名 (e.g., "Set-A")
+            %     - TargetData:  主データ名 (e.g., "ZsHM")
+            %
+            %   dataSpecB (struct): データセットBの仕様 (dataSpecAと同様)
+            %
+            %   options (名前/値ペア):
+            %     - "Property" (string): 解析対象のプロパティ名 (グラフタイトル用, e.g., "反射率")
+            %     - "Amp"      (double): 増幅係数 (デフォルト: 1.5)
+            %     - "Bootstrap"(double): Bootstrapの反復回数 (デフォルト: 10000)
+            %     - "Mode"     (double): 1:H、2:HM、3:HS、4:HMS
+            arguments
+                obj
+                dataSpecA (1,1) struct {mustHaveFields(dataSpecA, ["SetName", "TargetData"])}
+                dataSpecB (1,1) struct {mustHaveFields(dataSpecB, ["SetName", "TargetData"])}
+                % オプション引数 (名前/値ペア)
+                options.Property  (1,1) string = "GRI"
+                options.Amp       (1,1) double {mustBeNumeric} = 1.0
+                options.Bootstrap (1,1) double {mustBeInteger, mustBePositive} = 10000
+                options.Mode (1,1) string {mustBeMember(options.Mode, ["H", "HM", "HS", "HMS", "model_H"])} = "H"
+            end
+
+            fprintf('相関係数のBootstrapを実行中 (Mode: %s)...\n', options.Mode);
+
+            % --- 1. データの準備 ---
+            plotData.targetA = obj.getDataFromSet(dataSpecA.SetName, dataSpecA.TargetData);
+            plotData.targetB = obj.getDataFromSet(dataSpecB.SetName, dataSpecB.TargetData);
+            if options.Mode == "model_H"
+                plotData.targetC = obj.getDataFromSet(dataSpecA.SetName, options.DataNameC); % 例: Aのデータセットからモデルデータを取得
+            end
+
+            % --- 2. 描画オプションを構造体にまとめる ---
+            plotOptions = options;
+            plotOptions.NameA = dataSpecA.SetName;
+            plotOptions.NameB = dataSpecB.SetName;
+
+            % --- 3. 統合された単一のヘルパー関数を呼び出す ---
+            obj.generateBootstrapPlot(plotData, plotOptions);
+
+            fprintf('プロットの作成が完了しました。\n');
         end
         
         %% 照明モデルに対する相関係数のBootstrapをプロット
@@ -414,103 +437,85 @@ classdef DataAnalyzer < handle
         end
 
         %% --- 散布図  ---
-        function createAndSaveScatterPlot_H(obj, dataA, dataB, hdrData, nameA, nameB, property, titleStr, amp, predictionDimention)
-            fig = figure('Visible', 'off');
-            try
-                PlotScatter_ver1(dataA(:), dataB(:), ...
-                               sprintf('%s-%s', nameA, property), ...
-                               sprintf('%s-%s', nameB, property), ...
-                               titleStr, hdrData, amp, predictionDimention);
-
-                % プロットの保存
-                grid on;
-                plotFileName = sprintf('%svs%s_%s_H_scatter.jpg', nameA, nameB, property);
-                plotFullPath = fullfile(obj.ResultDir, plotFileName);
-                saveas(fig, plotFullPath);
-                fprintf('  -> 散布図を保存しました: %s\n', plotFullPath);
-            catch ME
-                close(fig);
-                rethrow(ME);
+        function generateScatterPlot(obj, plotData, plotOptions)
+            % HMSモードはFigureを複数作成するため、特別に処理
+            if plotOptions.Mode == "HMS"
+                for mat = 1:size(plotData.targetA, 2)
+                    obj.drawAndSavePlot(plotData, plotOptions, mat);
+                end
+            else
+                % H, HM, HSモードは単一のFigureを作成
+                obj.drawAndSavePlot(plotData, plotOptions);
             end
-            close(fig);
         end
-        
-        function createAndSaveScatterPlot_HM(obj, dataA, dataB, hdrData, nameA, nameB, property, titleStr, amp, predictionDimention)
-            fig = figure('Visible', 'off');
+
+        % --- 実際の描画と保存を行うヘルパー関数 ---
+        function drawAndSavePlot(obj, plotData, plotOptions, mat_idx)
+            if nargin < 4
+                mat_idx = []; % HMSモードでない場合は空
+            end
+
+            fig = [];
             try
-                tiledlayout(2,2,'TileSpacing', 'compact', 'Padding', 'compact');
-                for mat = 1:size(dataA,2)
-                    nexttile;
-                    PlotScatter_ver1(dataA(:,mat), dataB(:,mat), ...
-                               sprintf('%s-%s', nameA, property), ...
-                               sprintf('%s-%s', nameB, property), ...
-                               titleStr, hdrData, amp, predictionDimention);
+                fig = figure('Visible', 'off');
+
+                % モードに応じてループ処理
+                switch plotOptions.Mode
+                    case "H"
+                        titleStr = plotOptions.Title;
+                        
+                        PlotScatter_ver1(plotData.targetA(:), plotData.targetB(:), ...
+                            plotOptions.NameA, plotOptions.NameB, titleStr, plotData.hdr, ...
+                            plotOptions.Amp, plotOptions.PreDim);
+                    case {"HM", "HS"}                        
+                        if plotOptions.Mode == "HM"
+                            tiledlayout(2,2,'TileSpacing', 'compact', 'Padding', 'compact');
+                            labels = obj.MatNames3;
+                        else % "HS"
+                            tiledlayout(2,3,'TileSpacing', 'compact', 'Padding', 'compact');
+                            labels = obj.ShapeNames;
+                        end
+                        
+                        sgtitle(plotOptions.Title, 'Interpreter', 'none');
+                        for i = 1:size(plotData.targetA, 2)
+                            nexttile;
+                            titleStr = sprintf('%s',string(labels(i)));
+                            
+                            PlotScatter_ver1(plotData.targetA(:, i), plotData.targetB(:, i), ...
+                                plotOptions.NameA, plotOptions.NameB, titleStr, ...
+                                plotData.hdr, plotOptions.Amp, plotOptions.PreDim);
+                        end
+                    case "HMS"
+                        tiledlayout(2,3,'TileSpacing', 'compact', 'Padding', 'compact');
+                        titleStr = sprintf('%s-%s', plotOptions.Title,string(obj.MatNames3(mat_idx)));
+                        sgtitle(titleStr, 'Interpreter', 'none');
+                        
+                        for shape = 1:size(plotData.targetA, 3)
+                            nexttile;
+                            titleStr = sprintf('%s',string(obj.ShapeNames(shape)));
+                            
+                            PlotScatter_ver1(plotData.targetA(:, mat_idx, shape), plotData.targetB(:, mat_idx, shape),...
+                                plotOptions.NameA, plotOptions.NameB,titleStr, ...
+                                plotData.hdr, plotOptions.Amp, plotOptions.PreDim);
+                        end
                 end
 
-                % プロットの保存
-                grid on;
-                plotFileName = sprintf('%svs%s_%s_HM_scatter.jpg', nameA, nameB, property);
+                % ファイル名の決定と保存
+                filename_suffix = plotOptions.Mode;
+                if plotOptions.Mode == "HMS"
+                    filename_suffix = "HMS_" + string(obj.MatNames3(mat_idx));
+                end
+                plotFileName = sprintf('%svs%s_%s_%s_scatter.jpg', plotOptions.NameA, plotOptions.NameB, plotOptions.Property, filename_suffix);
                 plotFullPath = fullfile(obj.ResultDir, plotFileName);
                 saveas(fig, plotFullPath);
-                fprintf('  -> 散布図を保存しました: %s\n', plotFullPath);
-            catch ME
-                close(fig);
-                rethrow(ME);
-            end
-            close(fig);
-        end
-        
-        function createAndSaveScatterPlot_HS(obj, dataA, dataB, hdrData, nameA, nameB, property, titleStr, amp, predictionDimention)
-            fig = figure('Visible', 'off');
-            try
-                tiledlayout(2,3,'TileSpacing', 'compact', 'Padding', 'compact');
-                for shape = 1:size(dataA,2)
-                    nexttile;
-                    PlotScatter_ver1(dataA(:,shape), dataB(:,shape), ...
-                               sprintf('%s-%s', nameA, property), ...
-                               sprintf('%s-%s', nameB, property), ...
-                               titleStr, hdrData, amp, predictionDimention);
-                end
+                fprintf('  -> 散布図を保存しました\n');
 
-                % プロットの保存
-                grid on;
-                plotFileName = sprintf('%svs%s_%s_HS_scatter.jpg', nameA, nameB, property);
-                plotFullPath = fullfile(obj.ResultDir, plotFileName);
-                saveas(fig, plotFullPath);
-                fprintf('  -> 散布図を保存しました: %s\n', plotFullPath);
             catch ME
-                close(fig);
-                rethrow(ME);
-            end
-            close(fig);
-        end
-        
-        function createAndSaveScatterPlot_HMS(obj, dataA, dataB, hdrData, nameA, nameB, property, titleStr, amp, predictionDimention)
-            try
-                for mat = 1:size(dataA,2)
-                    fig = figure('Visible', 'off');
-                    tiledlayout(2,3,'TileSpacing', 'compact', 'Padding', 'compact');
-                    for shape = 1:size(dataA,3)
-                        nexttile;
-                        title = sprintf('%s\n%s',titleStr,string(obj.MatNames3(mat)));
-                        PlotScatter_ver1(dataA(:,mat,shape),dataB(:,mat,shape), ...                             
-                                    sprintf('%s-%s', nameA, property), ...
-                                    sprintf('%s-%s', nameB, property), ...
-                                    title, hdrData, amp, predictionDimention);
-                    end                   
-                    % プロットの保存
-                    grid on;
-                    plotFileName = sprintf('%svs%s_%s_HMS_%s_scatter.jpg', nameA, nameB, property,string(obj.MatNames3(mat)));
-                    plotFullPath = fullfile(obj.ResultDir, plotFileName);
-                    saveas(fig, plotFullPath);
-                    fprintf('  -> 散布図を保存しました: %s\n', plotFullPath);
-                    
-                    close(fig);
-                end
-            catch ME
+                if ~isempty(fig), close(fig); end
                 rethrow(ME);
             end
         end
+
 
         %% --- ヒストグラムを作成・保存  ---
         function createAndSaveHistogram(obj, dataA, errA, dataB, errB, hdrData, titleStr, amp, nameA, nameB, property)
@@ -533,100 +538,71 @@ classdef DataAnalyzer < handle
         end
         
         %% Bootstrap
-        function CorrBootstrap_H(obj,dataA,dataB,nameA,nameB,numBootstrap,titleStr,amp,property)
-            dataA_reshaped = reshape(dataA,size(dataA,1),size(dataA,2),size(dataA,3),[]);
-            dataB_reshaped = reshape(dataB,size(dataB,1),size(dataB,2),size(dataB,3),[]); 
+        function generateBootstrapPlot(obj, plotData, plotOptions)
+            dataA = plotData.targetA;
+            dataB = plotData.targetB;
+            dataA_r = reshape(dataA,size(dataA,1),size(dataA,2),size(dataA,3),[]);
+            dataB_r = reshape(dataB,size(dataB,1),size(dataB,2),size(dataB,3),[]);
+            fig = [];
 
-            [corrA,corrAB,correlationDiffs] = Corr_Significance_H(dataA_reshaped,dataB_reshaped,numBootstrap);
+            try
+                switch plotOptions.Mode
+                    case "H"
+                        %dataA_r = reshape(dataA,size(dataA,1),[]);
+                        %dataB_r = reshape(dataB,size(dataB,1),[]);
+                        
+                        [corrA, corrAB, correlationDiffs] = Corr_Significance_H(dataA_r, dataB_r, plotOptions.Bootstrap);
+                        sortedDiffs = sort(correlationDiffs);
+                        disp(sortedDiffs);
+                        threshold = sortedDiffs(round(plotOptions.Bootstrap*0.05)); 
+                        
+                        fig = figure('Visible','off');
+                        Graph_Significance_H(obj.MeanArray(dataA,1), obj.MeanArray(dataB,1), corrA, corrAB, threshold, plotOptions.Amp);
+                        set(gca, 'XTick', []);
+                        title(sprintf('%s vs %s\n%s', plotOptions.NameA, plotOptions.NameB, plotOptions.Property), 'FontSize', 18*plotOptions.Amp);
 
-            % 95%信頼区間の下限を確認
-            sortedDiffs = sort(correlationDiffs);
-            threshold = sortedDiffs(round(numBootstrap*0.05)); 
+                    case {"HM", "HS"}
+                        if plotOptions.Mode == "HS"
+                            % HSモードは次元を入れ替える
+                            dataA_r = permute(dataA_r, [1, 3, 2, 4]);
+                            dataB_r = permute(dataB_r, [1, 3, 2, 4]);
+                            labels = obj.ShapeNames;
+                        else % HMモード
+                            labels = obj.MatNames3;
+                        end
 
-            % coef hisgram
-            x = obj.MeanArray(dataA,1);
-            y = obj.MeanArray(dataB,1);
-            fig = figure('Visible', 'off');
-            hold on;
+                        loopLimit = size(dataA_r, 2);
+                        [corrA, corrAB, ~, threshold] = Corr_Significance_MS(dataA_r, dataB_r, plotOptions.Bootstrap, loopLimit);
 
-            Graph_Significance_H(x,y,corrA,corrAB,threshold,amp);
+                        fig = figure('Visible','off');
+                        Graph_Significance_MS(obj.MeanArray(dataA_r, 2), obj.MeanArray(dataB_r, 2), corrA, corrAB, threshold, plotOptions.Amp, loopLimit);
+                        set(gca, 'XTick', 1:length(labels), 'XTickLabel', labels);
+                        title(sprintf('%s vs %s\n%s', plotOptions.NameA, plotOptions.NameB, plotOptions.Property), 'FontSize', 18*plotOptions.Amp);
 
-            set(gca, 'XTick', []);
-            title(titleStr,'FontSize',18*amp);
+                    case "HMS"
+                        [corrA, corrAB, ~, threshold] = Corr_Significance_HMS(plotData.targetA, plotData.targetB, plotOptions.Bootstrap);
+                        Graph_Significance_HMS(mean(plotData.targetA, 4), mean(plotData.targetB, 4), corrA, corrAB, threshold, ...
+                            plotOptions.NameA, plotOptions.NameB, plotOptions.Bootstrap, obj.MatNames1, obj.ShapeNames, obj.ResultDir, plotOptions.Amp);
+                        return;
 
-            % プロットの保存
-            grid on;
-            hold off;
-            plotFileName = sprintf('%svs%s_%s_Significance_H.jpg', nameA, nameB, property);
-            plotFullPath = fullfile(obj.ResultDir, plotFileName);
-            saveas(fig, plotFullPath);
-            fprintf('  -> ヒストグラムを保存しました: %s\n', plotFullPath);
-        end
-        
-        function CorrBootstrap_HM(obj,dataA,dataB,nameA,nameB,numBootstrap,titleStr,amp,property)
-            dataA_reshaped = reshape(dataA,size(dataA,1),size(dataA,2),size(dataA,3),[]);
-            dataB_reshaped = reshape(dataB,size(dataB,1),size(dataB,2),size(dataB,3),[]); 
+                    case "model_H"
+                        % dataA vs ModelC
+                        obj.generateSingleModelPlot(plotData.targetA, plotData.targetC, plotOptions.NameA, plotOptions.NameC, plotOptions);
+                        % dataB vs ModelC
+                        obj.generateSingleModelPlot(plotData.targetB, plotData.targetC, plotOptions.NameB, plotOptions.NameC, plotOptions);
+                        return; % 2つのプロットを個別作成するため、ここで終了
+                end
 
-            [numIllumination,MatNum,ShapeNum,~] = size(dataA_reshaped); % 照明環境の数
-            [corrA,corrAB,correlationDiffs,threshold] = Corr_Significance_MS(dataA_reshaped,dataB_reshaped,numBootstrap,MatNum);
+                % H, HM, HS モードの共通保存処理
+                grid on;
+                plotFileName = sprintf('%svs%s_%s_Significance_%s.jpg', plotOptions.NameA, plotOptions.NameB, plotOptions.Property, plotOptions.Mode);
+                plotFullPath = fullfile(obj.ResultDir, plotFileName);
+                saveas(fig, plotFullPath);
+                fprintf('  -> %s モードのグラフを保存しました: %s\n', plotOptions.Mode, plotFullPath);
 
-            % coef hisgram
-            x = obj.MeanArray(dataA_reshaped,2);
-            y = obj.MeanArray(dataB_reshaped,2);
-            fig = figure('Visible', 'off');
-            hold on;
-
-            Graph_Significance_MS(x,y,corrA,corrAB,threshold,amp,MatNum);
-
-            set(gca, 'XTick', 1:length(obj.MatNames3));
-            xticklabels(obj.MatNames3);
-            title(titleStr,'FontSize',18*amp);
-
-            % プロットの保存
-            grid on;
-            hold off;
-            plotFileName = sprintf('%svs%s_%s_Significance_HM.jpg', nameA, nameB, property);
-            plotFullPath = fullfile(obj.ResultDir, plotFileName);
-            saveas(fig, plotFullPath);
-            fprintf('  -> ヒストグラムを保存しました: %s\n', plotFullPath);
-        end
-        
-        function CorrBootstrap_HS(obj,dataA,dataB,nameA,nameB,numBootstrap,titleStr,amp,property)
-            dataA_reshaped = permute(reshape(dataA,size(dataA,1),size(dataA,2),size(dataA,3),[]),[1,3,2,4]);
-            dataB_reshaped = permute(reshape(dataB,size(dataB,1),size(dataB,2),size(dataB,3),[]),[1,3,2,4]); 
-
-            [numIllumination,ShapeNum,MatNum,~] = size(dataA_reshaped); % 照明環境の数
-            [corrA,corrAB,correlationDiffs,threshold] = Corr_Significance_MS(dataA_reshaped,dataB_reshaped,numBootstrap,ShapeNum);
-
-            % coef hisgram
-            x = obj.MeanArray(dataA_reshaped,2);
-            y = obj.MeanArray(dataB_reshaped,2);
-            fig = figure('Visible', 'off');
-            hold on;
-
-            Graph_Significance_MS(x,y,corrA,corrAB,threshold,amp,ShapeNum);
-
-            set(gca, 'XTick', 1:length(obj.ShapeNames));
-            xticklabels(obj.ShapeNames);
-            title(titleStr,'FontSize',18*amp);
-
-            % プロットの保存
-            grid on;
-            hold off;
-            plotFileName = sprintf('%svs%s_%s_Significance_HS.jpg', nameA, nameB, property);
-            plotFullPath = fullfile(obj.ResultDir, plotFileName);
-            saveas(fig, plotFullPath);
-            fprintf('  -> ヒストグラムを保存しました: %s\n', plotFullPath);
-        end
-        
-        function CorrBootstrap_HMS(obj,dataA,dataB,nameA,nameB,numBootstrap,amp)
-            dataA_reshaped = reshape(dataA,size(dataA,1),size(dataA,2),size(dataA,3),[]);
-            dataB_reshaped = reshape(dataB,size(dataB,1),size(dataB,2),size(dataB,3),[]); 
-
-            [corrA,corrAB,correlationDiffs,threshold] = Corr_Significance_HMS(dataA_reshaped,dataB_reshaped,numBootstrap);
-
-            Graph_Significance_HMS(mean(dataA_reshaped,4),mean(dataB_reshaped,4),corrA,corrAB,threshold,...
-                nameA,nameB,numBootstrap,obj.MatNames1,obj.ShapeNames,obj.ResultDir,amp);
+            catch ME
+                rethrow(ME);
+            end
         end
         
         function CorrBootstrap_model_H(obj,dataA,dataB,dataC,nameA,nameB,nameC,numBootstrap,amp,property)
