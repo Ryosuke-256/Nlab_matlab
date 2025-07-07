@@ -64,7 +64,6 @@ function [] = PlotScatter_ver1(array1,array2,x_label,y_label,graph_title,HDRNo,a
     set(gca,'FontSize',8 * amp);
 
     text(x_limits(1)+abs(x_limits(1)-x_limits(2))/15,y_limits(2)-abs(x_limits(1)-x_limits(2))/10, sprintf('r = %.2f',r_value), 'FontSize', 8*amp);
-    %text(x_limits(1)*0.9,y_limits(2)*0.75, sprintf('Slope : %.2f',p(1)), 'FontSize', 8*amp);
     text(x_limits(1)+abs(x_limits(1)-x_limits(2))/15,y_limits(2)-abs(x_limits(1)-x_limits(2))/10*2, sprintf('R2 : %.2f',R2), 'FontSize', 8*amp);
 
     xlabel(x_label,'FontSize',12*amp);

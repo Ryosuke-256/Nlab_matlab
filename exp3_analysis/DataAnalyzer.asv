@@ -176,7 +176,8 @@ classdef DataAnalyzer < handle
             %     - "HdrSet"   (string): 使用するHDR定数セットの名前 (e.g., "HDRNum_30")
             %     - "Amp"      (double): 増幅係数 (デフォルト: 1.5)
             %     - "PreDim"   (double): 回帰線の次元、1:線型回帰、2:非線形回帰
-            %     - "Mode"     (double): 1:H、2:HM、3:HS、4:HMS
+            %     - "Mode"     (string): H、HM、HS、HMS
+            %     - "Resudual" (string): regression, outlier
 
             arguments
                 obj
@@ -186,7 +187,8 @@ classdef DataAnalyzer < handle
                 options.HdrSet   (1,1) string {mustBeMember(options.HdrSet, ["HDRNum_15", "HDRNum_30"])} = "HDRNum_30"
                 options.Amp      (1,1) double {mustBeNumeric} = 1.0
                 options.PreDim   (1,1) double {mustBeNumeric} = 1
-                options.Mode (1,1) string {mustBeMember(options.Mode, ["H", "HM", "HS", "HMS"])} = "H"
+                options.Mode     (1,1) string {mustBeMember(options.Mode, ["H", "HM", "HS", "HMS"])} = "H"
+                options.Residual (1,1) string {mustBeMember(options.Residual, ["regression", "outlier"])} = "regression"
             end
 
             fprintf('散布図の作成を開始します...\n');
@@ -463,10 +465,13 @@ classdef DataAnalyzer < handle
                 switch plotOptions.Mode
                     case "H"
                         titleStr = plotOptions.Title;
-                        
+                        %{
                         PlotScatter_ver1(plotData.targetA(:), plotData.targetB(:), ...
                             plotOptions.NameA, plotOptions.NameB, titleStr, plotData.hdr, ...
                             plotOptions.Amp, plotOptions.PreDim);
+                        %}
+                        PlotScatter_ver2(plotData.targetA(:), plotData.targetB(:),"XLabel",plotOptions.NameA,"YLabel",plotOptions.NameB,...
+                            "Mode",plotOptions.Residual,"Title",titleStr,"HDRNo",plotOptions.hdr,"Amp",plotOptions.Amp,"FitType","linear");
                     case {"HM", "HS"}                        
                         if plotOptions.Mode == "HM"
                             tiledlayout(2,2,'TileSpacing', 'compact', 'Padding', 'compact');
@@ -553,7 +558,7 @@ classdef DataAnalyzer < handle
                         
                         [corrA, corrAB, correlationDiffs] = Corr_Significance_H(dataA_r, dataB_r, plotOptions.Bootstrap);
                         sortedDiffs = sort(correlationDiffs);
-                        disp(sor
+                        disp(sortedDiffs);
                         threshold = sortedDiffs(round(plotOptions.Bootstrap*0.05)); 
                         
                         fig = figure('Visible','off');
@@ -650,7 +655,7 @@ classdef DataAnalyzer < handle
             fprintf('  -> 保存しました: %s\n', plotFullPath);
         end
         
-        %% 残差データを受け取り、グラフの作成と保存を行う
+        %% 残差
         function generateResidualPlot(obj, residuals, dataSpec1, dataSpec2, options)
             % データが3次元配列かチェック
             if ndims(residuals) < 3

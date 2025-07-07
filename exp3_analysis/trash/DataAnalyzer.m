@@ -176,8 +176,7 @@ classdef DataAnalyzer < handle
             %     - "HdrSet"   (string): 使用するHDR定数セットの名前 (e.g., "HDRNum_30")
             %     - "Amp"      (double): 増幅係数 (デフォルト: 1.5)
             %     - "PreDim"   (double): 回帰線の次元、1:線型回帰、2:非線形回帰
-            %     - "Mode"     (string): H、HM、HS、HMS
-            %     - "Resudual" (string): regression, outlier
+            %     - "Mode"     (double): 1:H、2:HM、3:HS、4:HMS
 
             arguments
                 obj
@@ -187,8 +186,7 @@ classdef DataAnalyzer < handle
                 options.HdrSet   (1,1) string {mustBeMember(options.HdrSet, ["HDRNum_15", "HDRNum_30"])} = "HDRNum_30"
                 options.Amp      (1,1) double {mustBeNumeric} = 1.0
                 options.PreDim   (1,1) double {mustBeNumeric} = 1
-                options.Mode     (1,1) string {mustBeMember(options.Mode, ["H", "HM", "HS", "HMS"])} = "H"
-                options.Residual (1,1) string {mustBeMember(options.Residual, ["regression", "outlier"])} = "regression"
+                options.Mode (1,1) string {mustBeMember(options.Mode, ["H", "HM", "HS", "HMS"])} = "H"
             end
 
             fprintf('散布図の作成を開始します...\n');
@@ -465,8 +463,11 @@ classdef DataAnalyzer < handle
                 switch plotOptions.Mode
                     case "H"
                         titleStr = plotOptions.Title;
-                        PlotScatter_ver2(plotData.targetA(:), plotData.targetB(:),"XLabel",plotOptions.NameA,"YLabel",plotOptions.NameB,...
-                            "Mode",plotOptions.Residual,"Title",titleStr,"HDRNo",plotData.hdr,"Amp",plotOptions.Amp,"FitType","linear");
+                        
+                        PlotScatter_ver1(plotData.targetA(:), plotData.targetB(:), ...
+                            plotOptions.NameA, plotOptions.NameB, titleStr, plotData.hdr, ...
+                            plotOptions.Amp, plotOptions.PreDim);
+                        
                     case {"HM", "HS"}                        
                         if plotOptions.Mode == "HM"
                             tiledlayout(2,2,'TileSpacing', 'compact', 'Padding', 'compact');
@@ -481,8 +482,9 @@ classdef DataAnalyzer < handle
                             nexttile;
                             titleStr = sprintf('%s',string(labels(i)));
                             
-                            PlotScatter_ver2(plotData.targetA(:,i), plotData.targetB(:,i),"XLabel",plotOptions.NameA,"YLabel",plotOptions.NameB,...
-                                "Mode",plotOptions.Residual,"Title",titleStr,"HDRNo",plotData.hdr,"Amp",plotOptions.Amp,"FitType","linear");
+                            PlotScatter_ver1(plotData.targetA(:, i), plotData.targetB(:, i), ...
+                                plotOptions.NameA, plotOptions.NameB, titleStr, ...
+                                plotData.hdr, plotOptions.Amp, plotOptions.PreDim);
                         end
                     case "HMS"
                         tiledlayout(2,3,'TileSpacing', 'compact', 'Padding', 'compact');
@@ -493,9 +495,9 @@ classdef DataAnalyzer < handle
                             nexttile;
                             titleStr = sprintf('%s',string(obj.ShapeNames(shape)));
                             
-                            PlotScatter_ver2(plotData.targetA(:,mat_idx,shape), plotData.targetB(:,mat_idx,shape),...
-                                "XLabel",plotOptions.NameA,"YLabel",plotOptions.NameB,...
-                                "Mode",plotOptions.Residual,"Title",titleStr,"HDRNo",plotData.hdr,"Amp",plotOptions.Amp,"FitType","linear");
+                            PlotScatter_ver1(plotData.targetA(:, mat_idx, shape), plotData.targetB(:, mat_idx, shape),...
+                                plotOptions.NameA, plotOptions.NameB,titleStr, ...
+                                plotData.hdr, plotOptions.Amp, plotOptions.PreDim);
                         end
                 end
 

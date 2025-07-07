@@ -1,4 +1,4 @@
-function [Outlinear_Points] = Outlinear_Detection(array1,array2,threshold,x_label,y_label,graph_title,HDRNo,amp)
+function [Outlinear_Points] = Outlinear_Detection(array1,array2,threshold,coef_list,slop_list,x_label,y_label,graph_title,HDRNo,amp)
     x = array1;
     y = array2;
     n = length(x);
@@ -52,7 +52,7 @@ function [Outlinear_Points] = Outlinear_Detection(array1,array2,threshold,x_labe
     
     % HDR No
     for point = 1:length(x)
-        text(x(point)-0.004, y(point)+0.003, num2str(HDRNo(point)), 'VerticalAlignment', 'bottom', 'HorizontalAlignment', 'right','FontSize',8*amp);
+        text(x(point)-0.01, y(point)+0.01, num2str(HDRNo(point)), 'VerticalAlignment', 'bottom', 'HorizontalAlignment', 'right','FontSize',6*amp);
     end
 
     xlabel(x_label,'FontSize',8*amp);
@@ -76,6 +76,9 @@ function [Outlinear_Points] = Outlinear_Detection(array1,array2,threshold,x_labe
     if mdl.Coefficients.Estimate(2) < 0
         r_val = -r_val;
     end
+
+    coef_list(end+1) = r_val;
+    slop_list(end+1) = mdl.Rsquared.Ordinary;
     
     text(x_limits(1)*0.9,y_limits(2)*0.9, sprintf('r = %.2f', r_val), 'FontSize', 8*amp);
     text(x_limits(1)*0.9,y_limits(2)*0.75, sprintf('R2 = %.2f', mdl.Rsquared.Ordinary), 'FontSize', 8*amp);
