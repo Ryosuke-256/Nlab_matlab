@@ -213,71 +213,7 @@ classdef DataAnalyzer < handle
             fprintf('プロットの作成が完了しました。\n');
         end
         
-        %% 相関係数のBootstrap
-        function plotCorrBootstrap_old(obj,dataSpecA,dataSpecB,options)
-            % ■ 入力:
-            %   dataSpecA (struct): データセットAの仕様
-            %     - SetName:     DataSetsのキー名 (e.g., "Set-A")
-            %     - TargetData:  主データ名 (e.g., "ZsHM")
-            %
-            %   dataSpecB (struct): データセットBの仕様 (dataSpecAと同様)
-            %
-            %   options (名前/値ペア):
-            %     - "Property" (string): 解析対象のプロパティ名 (グラフタイトル用, e.g., "反射率")
-            %     - "Amp"      (double): 増幅係数 (デフォルト: 1.5)
-            %     - "Bootstrap"(double): Bootstrapの反復回数 (デフォルト: 10000)
-            %     - "Mode"     (double): 1:H、2:HM、3:HS、4:HMS
-
-            arguments
-                obj
-                dataSpecA (1,1) struct {mustHaveFields(dataSpecA, ["SetName", "TargetData"])}
-                dataSpecB (1,1) struct {mustHaveFields(dataSpecB, ["SetName", "TargetData"])}
-                options.Property (1,1) string = "GRI"
-                options.Amp      (1,1) double {mustBeNumeric} = 1.0
-                options.Bootstrap(1,1) double {mustBeNumeric} = 10000
-                options.Mode     (1,1) double {mustBeNumeric} = 1
-            end
-            
-            fprintf('相関係数のBootstrap...\n');
-
-            % --- データの抽出 (ヘルパーメソッドを利用) ---
-            targetDataA = obj.getDataFromSet(dataSpecA.SetName, dataSpecA.TargetData);
-            targetDataB = obj.getDataFromSet(dataSpecB.SetName, dataSpecB.TargetData);
-            
-            if options.Mode == 1
-                graphtitle = sprintf('%s vs %s about %s\nCorrelaton Coefficient', dataSpecA.SetName, dataSpecB.SetName, options.Property);
-                
-                % --- 図の作成と保存 ---
-                obj.CorrBootstrap_H(targetDataA, targetDataB, dataSpecA.SetName, dataSpecB.SetName, ...
-                    options.Bootstrap, graphtitle, options.Amp, options.Property);
-
-                fprintf('プロットの作成が完了しました。\n');
-                
-            elseif options.Mode == 2
-                graphtitle = sprintf('%s vs %s about %s\nCorrelaton Coefficient', dataSpecA.SetName, dataSpecB.SetName, options.Property);
-                
-                % --- 図の作成と保存 ---
-                obj.CorrBootstrap_HM(targetDataA, targetDataB, dataSpecA.SetName, dataSpecB.SetName, ...
-                    options.Bootstrap, graphtitle, options.Amp, options.Property);
-
-                fprintf('プロットの作成が完了しました。\n');
-            elseif options.Mode == 3
-                graphtitle = sprintf('%s vs %s about %s\nCorrelaton Coefficient', dataSpecA.SetName, dataSpecB.SetName, options.Property);
-                
-                % --- 図の作成と保存 ---
-                obj.CorrBootstrap_HS(targetDataA, targetDataB, dataSpecA.SetName, dataSpecB.SetName, ...
-                    options.Bootstrap, graphtitle, options.Amp, options.Property);
-
-                fprintf('プロットの作成が完了しました。\n');
-            elseif options.Mode == 4               
-                % --- 図の作成と保存 ---
-                obj.CorrBootstrap_HMS(targetDataA,targetDataB, dataSpecA.SetName, dataSpecB.SetName,...
-                    options.Bootstrap, options.Amp);
-                
-                fprintf('プロットの作成が完了しました。\n');
-            end
-        end
-        
+        %% 相関係数のBootstrap        
         function plotCorrBootstrap(obj, dataSpecA, dataSpecB, options)
             % ■ 入力:
             %   dataSpecA (struct): データセットAの仕様
@@ -300,6 +236,7 @@ classdef DataAnalyzer < handle
                 options.Amp       (1,1) double {mustBeNumeric} = 1.0
                 options.Bootstrap (1,1) double {mustBeInteger, mustBePositive} = 10000
                 options.Mode (1,1) string {mustBeMember(options.Mode, ["H", "HM", "HS", "HMS", "model_H"])} = "H"
+                options.Split     (1,1) double {mustBeInteger, mustBePositive} = 100
             end
 
             fprintf('相関係数のBootstrapを実行中 (Mode: %s)...\n', options.Mode);
@@ -465,13 +402,8 @@ classdef DataAnalyzer < handle
                 switch plotOptions.Mode
                     case "H"
                         titleStr = plotOptions.Title;
-                        %{
-                        PlotScatter_ver1(plotData.targetA(:), plotData.targetB(:), ...
-                            plotOptions.NameA, plotOptions.NameB, titleStr, plotData.hdr, ...
-                            plotOptions.Amp, plotOptions.PreDim);
-                        %}
                         PlotScatter_ver2(plotData.targetA(:), plotData.targetB(:),"XLabel",plotOptions.NameA,"YLabel",plotOptions.NameB,...
-                            "Mode",plotOptions.Residual,"Title",titleStr,"HDRNo",plotOptions.hdr,"Amp",plotOptions.Amp,"FitType","linear");
+                            "Mode",plotOptions.Residual,"Title",titleStr,"HDRNo",plotData.hdr,"Amp",plotOptions.Amp,"FitType","linear");
                     case {"HM", "HS"}                        
                         if plotOptions.Mode == "HM"
                             tiledlayout(2,2,'TileSpacing', 'compact', 'Padding', 'compact');
@@ -486,9 +418,8 @@ classdef DataAnalyzer < handle
                             nexttile;
                             titleStr = sprintf('%s',string(labels(i)));
                             
-                            PlotScatter_ver1(plotData.targetA(:, i), plotData.targetB(:, i), ...
-                                plotOptions.NameA, plotOptions.NameB, titleStr, ...
-                                plotData.hdr, plotOptions.Amp, plotOptions.PreDim);
+                            PlotScatter_ver2(plotData.targetA(:,i), plotData.targetB(:,i),"XLabel",plotOptions.NameA,"YLabel",plotOptions.NameB,...
+                                "Mode",plotOptions.Residual,"Title",titleStr,"HDRNo",plotData.hdr,"Amp",plotOptions.Amp,"FitType","linear");
                         end
                     case "HMS"
                         tiledlayout(2,3,'TileSpacing', 'compact', 'Padding', 'compact');
@@ -499,9 +430,9 @@ classdef DataAnalyzer < handle
                             nexttile;
                             titleStr = sprintf('%s',string(obj.ShapeNames(shape)));
                             
-                            PlotScatter_ver1(plotData.targetA(:, mat_idx, shape), plotData.targetB(:, mat_idx, shape),...
-                                plotOptions.NameA, plotOptions.NameB,titleStr, ...
-                                plotData.hdr, plotOptions.Amp, plotOptions.PreDim);
+                            PlotScatter_ver2(plotData.targetA(:,mat_idx,shape), plotData.targetB(:,mat_idx,shape),...
+                                "XLabel",plotOptions.NameA,"YLabel",plotOptions.NameB,...
+                                "Mode",plotOptions.Residual,"Title",titleStr,"HDRNo",plotData.hdr,"Amp",plotOptions.Amp,"FitType","linear");
                         end
                 end
 
@@ -546,38 +477,158 @@ classdef DataAnalyzer < handle
         function generateBootstrapPlot(obj, plotData, plotOptions)
             dataA = plotData.targetA;
             dataB = plotData.targetB;
-            dataA_r = reshape(dataA,size(dataA,1),size(dataA,2),size(dataA,3),[]);
-            dataB_r = reshape(dataB,size(dataB,1),size(dataB,2),size(dataB,3),[]);
             fig = [];
 
             try
                 switch plotOptions.Mode
                     case "H"
-                        %dataA_r = reshape(dataA,size(dataA,1),[]);
-                        %dataB_r = reshape(dataB,size(dataB,1),[]);
+                        dataA_r = squeeze(mean(mean(dataA,3),2));
+                        dataB_r = squeeze(mean(mean(dataB,3),2));
                         
-                        [corrA, corrAB, correlationDiffs] = Corr_Significance_H(dataA_r, dataB_r, plotOptions.Bootstrap);
-                        sortedDiffs = sort(correlationDiffs);
-                        disp(sortedDiffs);
-                        threshold = sortedDiffs(round(plotOptions.Bootstrap*0.05)); 
+                        [ceiling_distAA,ceiling_distAB,p_value,observed_corr] = Corr_Significance(dataA_r, dataB_r, plotOptions.Bootstrap, plotOptions.Split);
                         
                         fig = figure('Visible','off');
-                        Graph_Significance_H(obj.MeanArray(dataA,1), obj.MeanArray(dataB,1), corrA, corrAB, threshold, plotOptions.Amp);
+                        Graph_Significance_H(observed_corr, ceiling_distAA,ceiling_distAB, p_value,plotOptions.Amp);
                         set(gca, 'XTick', []);
                         title(sprintf('%s vs %s\n%s', plotOptions.NameA, plotOptions.NameB, plotOptions.Property), 'FontSize', 18*plotOptions.Amp);
 
                     case {"HM", "HS"}
                         if plotOptions.Mode == "HS"
                             % HSモードは次元を入れ替える
-                            dataA_r = permute(dataA_r, [1, 3, 2, 4]);
-                            dataB_r = permute(dataB_r, [1, 3, 2, 4]);
+                            dataA_r = squeeze(mean(dataA,2));
+                            dataB_r = squeeze(mean(dataB,2));
                             labels = obj.ShapeNames;
                         else % HMモード
+                            dataA_r = squeeze(mean(dataA,3));
+                            dataB_r = squeeze(mean(dataB,3));
                             labels = obj.MatNames3;
                         end
 
                         loopLimit = size(dataA_r, 2);
-                        [corrA, corrAB, ~, threshold] = Corr_Significance_MS(dataA_r, dataB_r, plotOptions.Bootstrap, loopLimit);
+                        
+                        ceiling_distAA_list = zeros(plotOptions.Bootstrap,loopLimit);
+                        ceiling_distAB_list = zeros(plotOptions.Bootstrap,loopLimit);
+                        p_value_list = zeros(loopLimit);
+                        observed_corr_list = zeros(loopLimit);
+                        
+                        for i = 1:loopLimit
+                            dataA_r2 = squeeze(dataA_r(:,i,:,:));
+                            dataB_r2 = squeeze(dataB_r(:,i,:,:));
+                            [ceiling_distAA,ceiling_distAB,p_value,observed_corr] = Corr_Significance(dataA_r2, dataB_r2, plotOptions.Bootstrap, plotOptions.Split);
+                            ceiling_distAA_list(:,i) = ceiling_distAA;
+                            ceiling_distAB_list(:,i) = ceiling_distAB;
+                            p_value_list(i) = p_value;
+                            observed_corr_list(i) = observed_corr;
+                        end
+
+                        fig = figure('Visible','off');
+                        Graph_Significance_MS(observed_corr_list, ceiling_distAA_list,ceiling_distAB_list, p_value_list,plotOptions.Amp);
+                        set(gca, 'XTick', 1:length(labels), 'XTickLabel', labels);
+                        title(sprintf('%s vs %s\n%s', plotOptions.NameA, plotOptions.NameB, plotOptions.Property), 'FontSize', 18*plotOptions.Amp);
+
+                    case "HMS"
+                        [corrA, corrAB, ~, threshold] = Corr_Significance_HMS(plotData.targetA, plotData.targetB, plotOptions.Bootstrap);
+                        Graph_Significance_HMS(mean(plotData.targetA, 4), mean(plotData.targetB, 4), corrA, corrAB, threshold, ...
+                            plotOptions.NameA, plotOptions.NameB, plotOptions.Bootstrap, obj.MatNames1, obj.ShapeNames, obj.ResultDir, plotOptions.Amp);
+                        return;
+
+                    case "model_H"
+                        % dataA vs ModelC
+                        obj.generateSingleModelPlot(plotData.targetA, plotData.targetC, plotOptions.NameA, plotOptions.NameC, plotOptions);
+                        % dataB vs ModelC
+                        obj.generateSingleModelPlot(plotData.targetB, plotData.targetC, plotOptions.NameB, plotOptions.NameC, plotOptions);
+                        return; % 2つのプロットを個別作成するため、ここで終了
+                end
+
+                % H, HM, HS モードの共通保存処理
+                grid on;
+                plotFileName = sprintf('%svs%s_%s_Significance_%s.jpg', plotOptions.NameA, plotOptions.NameB, plotOptions.Property, plotOptions.Mode);
+                plotFullPath = fullfile(obj.ResultDir, plotFileName);
+                saveas(fig, plotFullPath);
+                fprintf('  -> %s モードのグラフを保存しました: %s\n', plotOptions.Mode, plotFullPath);
+
+            catch ME
+                rethrow(ME);
+            end
+        end
+
+        %% Bootstrap
+        function generateBootstrapPlot_ver2(obj, plotData, plotOptions)
+            dataA = plotData.targetA;
+            dataB = plotData.targetB;
+            %dataA_r = reshape(dataA,size(dataA,1),size(dataA,2),size(dataA,3),[]);
+            %dataB_r = reshape(dataB,size(dataB,1),size(dataB,2),size(dataB,3),[]);
+            fig = [];
+
+            try
+                switch plotOptions.Mode
+                    case "H"
+                        dataA_r = squeeze(mean(mean(dataA,3),2));
+                        dataB_r = squeeze(mean(mean(dataB,3),2));
+                        
+                        % === ステップ1: 観測された実データの相関係数を計算 ===
+                        patternA = obj.MeanArray(dataA,1);
+                        patternB = obj.MeanArray(dataB,1);
+                        observed_corr = corr(patternA, patternB);
+
+                        % === ステップ2: データAのノイズ天井を推定 ===
+                        noise_ceiling_dist_A = estimateNoiseCeiling(dataA_r, plotOptions.Bootstrap, plotOptions.Split);
+
+                        % === ステップ3: p値の算出と結論 ===
+                        p_value = sum(noise_ceiling_dist_A <= observed_corr) / length(noise_ceiling_dist_A);
+
+                        % === ステップ4: 結果の表示と可視化 ===
+                        fprintf('\n観測された相関 corr(A, B): %.4f\n', observed_corr);
+                        fprintf('データAのノイズ天井の平均: %.4f\n', mean(noise_ceiling_dist_A));
+                        fprintf('p値: %.4f\n', p_value);
+                        if p_value > 0.05
+                            disp('結論: corr(A,B)はノイズ天井の範囲内です。');
+                        else
+                            disp('結論: corr(A,B)はノイズ天井よりも有意に低いです。');
+                        end
+
+                        % 可視化
+                        fig = figure('Visible','off');
+                        plotNoiseCeiling(observed_corr, noise_ceiling_dist_A, p_value);
+                        title(sprintf('%s vs %s %s', plotOptions.NameA, plotOptions.NameB, plotOptions.Property), 'FontSize', 18*plotOptions.Amp);
+
+                    case {"HM", "HS"}
+                        if plotOptions.Mode == "HS"
+                            % HSモードは次元を入れ替える
+                            dataA_r = squeeze(mean(dataA,2));
+                            dataB_r = squeeze(mean(dataB,2));
+                            labels = obj.ShapeNames;
+                        else % HMモード
+                            dataA_r = squeeze(mean(dataA,3));
+                            dataB_r = squeeze(mean(dataB,3));
+                            labels = obj.MatNames3;
+                        end
+
+                        loopLimit = length(labels);
+                        %[corrA, corrAB, ~, threshold] = Corr_Significance_MS(dataA_r, dataB_r, plotOptions.Bootstrap, loopLimit);
+                        for i = 1:loopLimit
+                            % === ステップ1: 観測された実データの相関係数を計算 ===
+                            patternA = obj.MeanArray(dataA,2);
+                            patternB = obj.MeanArray(dataB,2);
+                            observed_corr = corr(patternA(:,i), patternB(:,i));
+
+                            % === ステップ2: データAのノイズ天井を推定 ===
+                            noise_ceiling_dist_A = estimateNoiseCeiling(squeeze(dataA_r(:,i)), plotOptions.Bootstrap, plotOptions.Split);
+
+                            % === ステップ3: p値の算出と結論 ===
+                            p_value = sum(noise_ceiling_dist_A <= observed_corr) / length(noise_ceiling_dist_A);
+
+                            % === ステップ4: 結果の表示と可視化 ===
+                            fprintf('%sの結果',labels(i));
+                            fprintf('実験のcorr(A, B): %.4f\n', observed_corr);
+                            fprintf('データAのノイズ天井の平均: %.4f\n', mean(noise_ceiling_dist_A));
+                            fprintf('p値: %.4f\n', p_value);
+                            if p_value > 0.05
+                                disp('結論: corr(A,B)はノイズ天井の範囲内です。\n');
+                            else
+                                disp('結論: corr(A,B)はノイズ天井よりも有意に低いです。\n');
+                            end
+                        end
 
                         fig = figure('Visible','off');
                         Graph_Significance_MS(obj.MeanArray(dataA_r, 2), obj.MeanArray(dataB_r, 2), corrA, corrAB, threshold, plotOptions.Amp, loopLimit);
