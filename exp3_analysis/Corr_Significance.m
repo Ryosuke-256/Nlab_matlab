@@ -1,4 +1,5 @@
 function [ceiling_distAA,ceiling_distAB,p_value,observed_corr] = Corr_Significance(dataA,dataB,num_bootstrap, num_splits)
+rng('shuffle')
 
 % 結果保存用
 correlationDiffs = zeros(num_bootstrap, 1);
@@ -12,8 +13,6 @@ meaned_dataA = MeanArray(dataA,1);
 meaned_dataB = MeanArray(dataB,1);
 observed_corr = corr(meaned_dataA,meaned_dataB);
 
-fprintf('ノイズ天井の推定を開始 (被験者リサンプリング: %d回)...\n', num_bootstrap);
-
 % === ステップ2: リサンプリング ===
 % ---  被験者リサンプリング ---
 for i = 1:num_bootstrap
@@ -24,7 +23,7 @@ for i = 1:num_bootstrap
     
     % === dataB ==
     boot_subj_indices_B = randi(num_subjects_B, 1, num_subjects_B);
-    resampled_data_B = dataA(:, boot_subj_indices_B, :);
+    resampled_data_B = dataB(:, boot_subj_indices_B, :);
     split_half_corrs_AB = zeros(num_splits, 1);
     
     % ---応答リサンプリング (Split-Half法)  ---
@@ -39,21 +38,23 @@ for i = 1:num_bootstrap
     ceiling_distAB(i) = mean(split_half_corrs_AB);
     
     % --- 相関係数の差 ---
-    correlationDiffs(i) = ceiling_distAA(i) - ceiling_distAB(i);
+    %correlationDiffs(i) = ceiling_distAA(i) - ceiling_distAB(i);
+    correlationDiffs(i) = ceiling_distAA(i) - observed_corr;
 end
 
 
 % === ステップ3: p値の算出と結論 ===
 p_value = sum(correlationDiffs <= 0) / length(ceiling_distAA);
+ci_95 = quantile(ceiling_distAA, [0.05, 1.0]);
 
 % === ステップ4: 結果の表示と可視化 ===
 fprintf('\n観測された相関 corr(A, B): %.4f\n', observed_corr);
-fprintf('データAのノイズ天井の平均: %.4f\n', mean(ceiling_distAA));
-fprintf('p値: %.4f\n', p_value);
+fprintf('データAのノイズ天井のCI95: %.3f, %.3f\n', ci_95(1),ci_95(2));
+fprintf('p値: %.3f\n', p_value);
 if p_value > 0.05
-    disp('結論: corr(A,B)はノイズ天井の範囲内です。');
+    fprintf('結論: corr(A,B)はノイズ天井の範囲内です\n');
 else
-    disp('結論: corr(A,B)はノイズ天井よりも有意に低いです。');
+    fprintf('結論: corr(A,B)はノイズ天井よりも有意に低いです\n');
 end
 
 end

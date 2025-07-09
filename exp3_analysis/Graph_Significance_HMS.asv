@@ -6,7 +6,7 @@ for mat = 1:length(MatNames)
     hold on;
     for shape = 1:length(ShapeNames)
         % coef and slope
-        r_value = observed_corr_list(mat,shape);
+        r_value = observed_corr_list(mat;
 
         maxValue = max(ceiling_distAB_list(:,mat,shape));
         minValue = min(ceiling_distAB_list(:,mat,shape));
@@ -16,12 +16,6 @@ for mat = 1:length(MatNames)
 
         % coef hisgram
         x_axis = shape;
-        
-        % ノイズ天井の95%信頼区間を灰色のエリアで描画
-        ci_95 = quantile(ceiling_distAA_list(:,mat,shape), [0.05, 1]);
-        fill([x_axis-0.5,x_axis+0.5,x_axis+0.5,x_axis-0.5], [ci_95(1), ci_95(1), ci_95(2), ci_95(2)], ...
-             'k', 'FaceAlpha', 0.25, 'EdgeColor', 'none');
-         
         bar_width = 0.4;
         bar_coef = bar(x_axis,r_value,bar_width, 'FaceColor', 'b', 'DisplayName', 'Coef');
 
@@ -29,7 +23,7 @@ for mat = 1:length(MatNames)
 
         graphtext1 = sprintf('%.2f',r_value);
         text(x_axis-0.1,(abs(r_value)+0.06)*r_value/abs(r_value),graphtext1,'HorizontalAlignment','center','VerticalAlignment','bottom','FontSize',8*amp);
-        if p_value_list(mat,shape) < 0.05
+        if p_value_list(mat,shape) > 0
             graphtext3 = sprintf('*');
             text(x_axis,(abs(r_value)+0.12)*r_value/abs(r_value),graphtext3,'HorizontalAlignment','center','VerticalAlignment','bottom','FontSize',12*amp);
         end
@@ -37,6 +31,12 @@ for mat = 1:length(MatNames)
         ylim([-0.1,1.1]);
         y_Limits = ylim;
         x_Limits = xlim;
+        SortCorrA = sort(ceiling_distAA_list(:,mat,shape));
+        maxorigin = SortCorrA(round(numBootstrap*0.95)); 
+        minorigin = SortCorrA(round(numBootstrap*0.05)); 
+        CI95 = fill([x_axis-0.5,x_axis+0.5,x_axis+0.5,x_axis-0.5], ...
+            [minorigin,minorigin,maxorigin,maxorigin], ...
+            'k', 'FaceAlpha', 0.3, 'EdgeColor', 'none');
 
         aveorigin = mean(ceiling_distAA_list(:,mat,shape));
         bar_plot = plot([x_axis-0.5, x_axis+0.5], [aveorigin, aveorigin], 'r--', 'LineWidth', 1.2,'DisplayName', 'Within-subject average');

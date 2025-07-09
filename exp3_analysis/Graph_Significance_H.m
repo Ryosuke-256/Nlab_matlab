@@ -4,7 +4,7 @@ hold on;
 x_axis = 1;
 
 % ノイズ天井の95%信頼区間を灰色のエリアで描画
-ci_95 = quantile(noise_ceiling_distAA, [0.025, 0.975]);
+ci_95 = quantile(noise_ceiling_distAA, [0.05, 1.0]);
 fill([x_axis-0.5,x_axis+0.5,x_axis+0.5,x_axis-0.5], [ci_95(1), ci_95(1), ci_95(2), ci_95(2)], ...
      'k', 'FaceAlpha', 0.3, 'EdgeColor', 'none');
  

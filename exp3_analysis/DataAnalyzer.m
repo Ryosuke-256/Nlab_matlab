@@ -486,6 +486,7 @@ classdef DataAnalyzer < handle
                         dataB_r = squeeze(mean(mean(dataB,3),2));
                         
                         [ceiling_distAA,ceiling_distAB,p_value,observed_corr] = Corr_Significance(dataA_r, dataB_r, plotOptions.Bootstrap, plotOptions.Split);
+                        %[ceiling_distAA,ceiling_distAB,p_value,observed_corr] = Corr_Significance(dataB_r,dataA_r, plotOptions.Bootstrap, plotOptions.Split);
                         
                         fig = figure('Visible','off');
                         Graph_Significance_H(observed_corr, ceiling_distAA,ceiling_distAB, p_value,plotOptions.Amp);
@@ -514,7 +515,10 @@ classdef DataAnalyzer < handle
                         for i = 1:loopLimit
                             dataA_r2 = squeeze(dataA_r(:,i,:,:));
                             dataB_r2 = squeeze(dataB_r(:,i,:,:));
+                            fprintf("%s",labels(i));
                             [ceiling_distAA,ceiling_distAB,p_value,observed_corr] = Corr_Significance(dataA_r2, dataB_r2, plotOptions.Bootstrap, plotOptions.Split);
+                            %[ceiling_distAA,ceiling_distAB,p_value,observed_corr] = Corr_Significance(dataB_r2,dataA_r2, plotOptions.Bootstrap, plotOptions.Split);
+                            
                             ceiling_distAA_list(:,i) = ceiling_distAA;
                             ceiling_distAB_list(:,i) = ceiling_distAB;
                             p_value_list(i) = p_value;
@@ -528,9 +532,31 @@ classdef DataAnalyzer < handle
                         title(sprintf('%s vs %s\n%s', plotOptions.NameA, plotOptions.NameB, plotOptions.Property), 'FontSize', 18*plotOptions.Amp);
 
                     case "HMS"
-                        [corrA, corrAB, ~, threshold] = Corr_Significance_HMS(plotData.targetA, plotData.targetB, plotOptions.Bootstrap);
-                        Graph_Significance_HMS(mean(plotData.targetA, 4), mean(plotData.targetB, 4), corrA, corrAB, threshold, ...
-                            plotOptions.NameA, plotOptions.NameB, plotOptions.Bootstrap, obj.MatNames1, obj.ShapeNames, obj.ResultDir, plotOptions.Amp);
+                        [~,MatNum,ShapeNum,~,~] = size(dataA);
+                        
+                        ceiling_distAA_list = zeros(plotOptions.Bootstrap,MatNum,ShapeNum);
+                        ceiling_distAB_list = zeros(plotOptions.Bootstrap,MatNum,ShapeNum);
+                        p_value_list = zeros(MatNum,ShapeNum);
+                        observed_corr_list = zeros(MatNum,ShapeNum);
+                        
+                        for mat = 1:MatNum
+                            for shape = 1:ShapeNum
+                                dataA_r = squeeze(dataA(:,mat,shape,:,:));
+                                dataB_r = squeeze(dataB(:,mat,shape,:,:));
+                                fprintf("mat:%s, shape:%s",string(obj.MatNames1(mat)),string(obj.ShapeNames(shape)));
+                                [ceiling_distAA,ceiling_distAB,p_value,observed_corr] = Corr_Significance(dataA_r, dataB_r, plotOptions.Bootstrap, plotOptions.Split);
+                            
+                                ceiling_distAA_list(:,mat,shape) = ceiling_distAA;
+                                ceiling_distAB_list(:,mat,shape) = ceiling_distAB;
+                                p_value_list(mat,shape) = p_value;
+                                observed_corr_list(mat,shape) = observed_corr;
+                            end
+                        end
+                        
+                        % --- plot ---
+                        Graph_Significance_HMS(observed_corr_list, ceiling_distAA_list,ceiling_distAB_list, p_value_list,...
+                            plotOptions.NameA, plotOptions.NameB, obj.MatNames1, obj.ShapeNames, obj.ResultDir, plotOptions.Amp);
+                        
                         return;
 
                     case "model_H"
