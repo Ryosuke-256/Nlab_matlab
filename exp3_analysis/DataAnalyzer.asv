@@ -213,7 +213,7 @@ classdef DataAnalyzer < handle
             fprintf('プロットの作成が完了しました。\n');
         end
         
-        %% 相関係数のBootstrap        
+        %% 相関係数のノイズ天井検定のBootstrap        
         function plotCorrBootstrap(obj, dataSpecA, dataSpecB, options)
             % ■ 入力:
             %   dataSpecA (struct): データセットAの仕様
@@ -543,7 +543,7 @@ classdef DataAnalyzer < handle
                             for shape = 1:ShapeNum
                                 dataA_r = squeeze(dataA(:,mat,shape,:,:));
                                 dataB_r = squeeze(dataB(:,mat,shape,:,:));
-                                fprintf("mat:%s, shape:%s",string(obj.MatNames1(mat)),sobj.ShapeNames(shape));
+                                fprintf("mat:%s, shape:%s",string(obj.MatNames1(mat)),string(obj.ShapeNames(shape)));
                                 [ceiling_distAA,ceiling_distAB,p_value,observed_corr] = Corr_Significance(dataA_r, dataB_r, plotOptions.Bootstrap, plotOptions.Split);
                             
                                 ceiling_distAA_list(:,mat,shape) = ceiling_distAA;
@@ -557,115 +557,6 @@ classdef DataAnalyzer < handle
                         Graph_Significance_HMS(observed_corr_list, ceiling_distAA_list,ceiling_distAB_list, p_value_list,...
                             plotOptions.NameA, plotOptions.NameB, obj.MatNames1, obj.ShapeNames, obj.ResultDir, plotOptions.Amp);
                         
-                        return;
-
-                    case "model_H"
-                        % dataA vs ModelC
-                        obj.generateSingleModelPlot(plotData.targetA, plotData.targetC, plotOptions.NameA, plotOptions.NameC, plotOptions);
-                        % dataB vs ModelC
-                        obj.generateSingleModelPlot(plotData.targetB, plotData.targetC, plotOptions.NameB, plotOptions.NameC, plotOptions);
-                        return; % 2つのプロットを個別作成するため、ここで終了
-                end
-
-                % H, HM, HS モードの共通保存処理
-                grid on;
-                plotFileName = sprintf('%svs%s_%s_Significance_%s.jpg', plotOptions.NameA, plotOptions.NameB, plotOptions.Property, plotOptions.Mode);
-                plotFullPath = fullfile(obj.ResultDir, plotFileName);
-                saveas(fig, plotFullPath);
-                fprintf('  -> %s モードのグラフを保存しました: %s\n', plotOptions.Mode, plotFullPath);
-
-            catch ME
-                rethrow(ME);
-            end
-        end
-
-        %% Bootstrap
-        function generateBootstrapPlot_ver2(obj, plotData, plotOptions)
-            dataA = plotData.targetA;
-            dataB = plotData.targetB;
-            %dataA_r = reshape(dataA,size(dataA,1),size(dataA,2),size(dataA,3),[]);
-            %dataB_r = reshape(dataB,size(dataB,1),size(dataB,2),size(dataB,3),[]);
-            fig = [];
-
-            try
-                switch plotOptions.Mode
-                    case "H"
-                        dataA_r = squeeze(mean(mean(dataA,3),2));
-                        dataB_r = squeeze(mean(mean(dataB,3),2));
-                        
-                        % === ステップ1: 観測された実データの相関係数を計算 ===
-                        patternA = obj.MeanArray(dataA,1);
-                        patternB = obj.MeanArray(dataB,1);
-                        observed_corr = corr(patternA, patternB);
-
-                        % === ステップ2: データAのノイズ天井を推定 ===
-                        noise_ceiling_dist_A = estimateNoiseCeiling(dataA_r, plotOptions.Bootstrap, plotOptions.Split);
-
-                        % === ステップ3: p値の算出と結論 ===
-                        p_value = sum(noise_ceiling_dist_A <= observed_corr) / length(noise_ceiling_dist_A);
-
-                        % === ステップ4: 結果の表示と可視化 ===
-                        fprintf('\n観測された相関 corr(A, B): %.4f\n', observed_corr);
-                        fprintf('データAのノイズ天井の平均: %.4f\n', mean(noise_ceiling_dist_A));
-                        fprintf('p値: %.4f\n', p_value);
-                        if p_value > 0.05
-                            disp('結論: corr(A,B)はノイズ天井の範囲内です。');
-                        else
-                            disp('結論: corr(A,B)はノイズ天井よりも有意に低いです。');
-                        end
-
-                        % 可視化
-                        fig = figure('Visible','off');
-                        plotNoiseCeiling(observed_corr, noise_ceiling_dist_A, p_value);
-                        title(sprintf('%s vs %s %s', plotOptions.NameA, plotOptions.NameB, plotOptions.Property), 'FontSize', 18*plotOptions.Amp);
-
-                    case {"HM", "HS"}
-                        if plotOptions.Mode == "HS"
-                            % HSモードは次元を入れ替える
-                            dataA_r = squeeze(mean(dataA,2));
-                            dataB_r = squeeze(mean(dataB,2));
-                            labels = obj.ShapeNames;
-                        else % HMモード
-                            dataA_r = squeeze(mean(dataA,3));
-                            dataB_r = squeeze(mean(dataB,3));
-                            labels = obj.MatNames3;
-                        end
-
-                        loopLimit = length(labels);
-                        %[corrA, corrAB, ~, threshold] = Corr_Significance_MS(dataA_r, dataB_r, plotOptions.Bootstrap, loopLimit);
-                        for i = 1:loopLimit
-                            % === ステップ1: 観測された実データの相関係数を計算 ===
-                            patternA = obj.MeanArray(dataA,2);
-                            patternB = obj.MeanArray(dataB,2);
-                            observed_corr = corr(patternA(:,i), patternB(:,i));
-
-                            % === ステップ2: データAのノイズ天井を推定 ===
-                            noise_ceiling_dist_A = estimateNoiseCeiling(squeeze(dataA_r(:,i)), plotOptions.Bootstrap, plotOptions.Split);
-
-                            % === ステップ3: p値の算出と結論 ===
-                            p_value = sum(noise_ceiling_dist_A <= observed_corr) / length(noise_ceiling_dist_A);
-
-                            % === ステップ4: 結果の表示と可視化 ===
-                            fprintf('%sの結果',labels(i));
-                            fprintf('実験のcorr(A, B): %.4f\n', observed_corr);
-                            fprintf('データAのノイズ天井の平均: %.4f\n', mean(noise_ceiling_dist_A));
-                            fprintf('p値: %.4f\n', p_value);
-                            if p_value > 0.05
-                                disp('結論: corr(A,B)はノイズ天井の範囲内です。\n');
-                            else
-                                disp('結論: corr(A,B)はノイズ天井よりも有意に低いです。\n');
-                            end
-                        end
-
-                        fig = figure('Visible','off');
-                        Graph_Significance_MS(obj.MeanArray(dataA_r, 2), obj.MeanArray(dataB_r, 2), corrA, corrAB, threshold, plotOptions.Amp, loopLimit);
-                        set(gca, 'XTick', 1:length(labels), 'XTickLabel', labels);
-                        title(sprintf('%s vs %s\n%s', plotOptions.NameA, plotOptions.NameB, plotOptions.Property), 'FontSize', 18*plotOptions.Amp);
-
-                    case "HMS"
-                        [corrA, corrAB, ~, threshold] = Corr_Significance_HMS(plotData.targetA, plotData.targetB, plotOptions.Bootstrap);
-                        Graph_Significance_HMS(mean(plotData.targetA, 4), mean(plotData.targetB, 4), corrA, corrAB, threshold, ...
-                            plotOptions.NameA, plotOptions.NameB, plotOptions.Bootstrap, obj.MatNames1, obj.ShapeNames, obj.ResultDir, plotOptions.Amp);
                         return;
 
                     case "model_H"
@@ -751,7 +642,7 @@ classdef DataAnalyzer < handle
                 fig = figure('Visible', 'off');
                 hold on;
                 
-                % 3次元目(shape)でループして、同一グラフにプロット
+                % 2次元目でループして、同一グラフにプロット
                 for i = 1:size(residuals, 2)
                     data_slice = residuals(:,i);
                     plot(1:numel(data_slice), data_slice, '-o', 'LineWidth', 0.75);
@@ -803,9 +694,8 @@ classdef DataAnalyzer < handle
 
         % --- タイル表示の残差プロットを作成する新しいヘルパー関数 ---
         function createTiledResidualPlot(obj, residuals, dataSpec1, dataSpec2, options)
-            % 2次元目(mat)でループして、Figureを個別に作成
             for mat = 1:size(residuals, 2)
-                fig = []; % エラーに備えて初期化
+                fig = [];
                 try
                     fig = figure('Visible', 'off');
                     hold on;

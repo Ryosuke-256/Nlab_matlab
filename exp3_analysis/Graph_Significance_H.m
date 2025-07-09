@@ -1,4 +1,8 @@
 function [] = Graph_Significance_H(observed_corr, noise_ceiling_distAA,noise_ceiling_distAB, p_value,amp)
+%   observed_corr      - 観測された相関係数（例: corr(A,B)）
+%   noise_ceiling_dist - ノイズ天井の経験分布（例: corr(A,A')の分布）
+%   p_value            - 事前に計算した検定のp値
+
 % coef hisgram
 hold on;
 x_axis = 1;
