@@ -12,7 +12,7 @@ classdef DataAnalyzer < handle
 
     %======================================================================
     % 定数プロパティ
-    %================================D======================================
+    %======================================================================
     properties (Constant)
         % インスタンスを作成しなくても `DataAnalyzer.MIN_SAMPLES` のようにアクセス可能です。
         MatNames1 = {'cu0025', 'cu0129', 'pla0075', 'pla0225'};
@@ -161,7 +161,8 @@ classdef DataAnalyzer < handle
                 end
             end
         end
-              
+
+        %% --- 散布図　---  
         function plotScatter(obj, dataSpecA, dataSpecB, options)            
             % ■ 入力:
             %   dataSpecA (struct): データセットAの仕様
@@ -235,26 +236,28 @@ classdef DataAnalyzer < handle
                 options.Property  (1,1) string = "GRI"
                 options.Amp       (1,1) double {mustBeNumeric} = 1.0
                 options.Bootstrap (1,1) double {mustBeInteger, mustBePositive} = 10000
-                options.Mode (1,1) string {mustBeMember(options.Mode, ["H", "HM", "HS", "HMS", "model_H"])} = "H"
+                options.Mode (1,1) string {mustBeMember(options.Mode, ["H", "HM", "HS", "HMS"])} = "H"
                 options.Split     (1,1) double {mustBeInteger, mustBePositive} = 3
+                options.Distribution (1,1) logical = false
             end
 
             fprintf('相関係数のBootstrapを実行中 (Mode: %s)...\n', options.Mode);
 
             % --- 1. データの準備 ---
-            plotData.targetA = obj.getDataFromSet(dataSpecA.SetName, dataSpecA.TargetData);
-            plotData.targetB = obj.getDataFromSet(dataSpecB.SetName, dataSpecB.TargetData);
-            if options.Mode == "model_H"
-                plotData.targetC = obj.getDataFromSet(dataSpecA.SetName, options.DataNameC); % 例: Aのデータセットからモデルデータを取得
-            end
+            plotDataA.target = obj.getDataFromSet(dataSpecA.SetName, dataSpecA.TargetData);
+            plotDataB.target = obj.getDataFromSet(dataSpecB.SetName, dataSpecB.TargetData);
 
             % --- 2. 描画オプションを構造体にまとめる ---
             plotOptions = options;
-            plotOptions.NameA = dataSpecA.SetName;
-            plotOptions.NameB = dataSpecB.SetName;
+            plotDataA.Name = dataSpecA.SetName;
+            plotDataB.Name = dataSpecB.SetName;
 
             % --- 3. 統合された単一のヘルパー関数を呼び出す ---
-            obj.generateBootstrapPlot(plotData, plotOptions);
+            obj.generateBootstrapPlot(plotDataA,plotDataB, plotOptions);
+            if options.Distribution
+                obj.generateBootstrapDistribution(plotDataA, plotOptions);
+                obj.generateBootstrapDistribution(plotDataB, plotOptions);
+            end
 
             fprintf('プロットの作成が完了しました。\n');
         end
@@ -474,11 +477,10 @@ classdef DataAnalyzer < handle
         end
         
         %% Bootstrap
-        function generateBootstrapPlot(obj, plotData, plotOptions)
-            dataA = plotData.targetA;
-            dataB = plotData.targetB;
-            fig = [];
-
+        function generateBootstrapPlot(obj, plotDataA,plotDataB, plotOptions)
+            dataA = plotDataA.target;
+            dataB = plotDataB.target;
+            
             try
                 switch plotOptions.Mode
                     case "H"
@@ -488,14 +490,14 @@ classdef DataAnalyzer < handle
                         [ceiling_distAA,ceiling_distAB,p_value,observed_corr] = Corr_Significance(dataA_r, dataB_r, plotOptions.Bootstrap, plotOptions.Split);
                         %[ceiling_distAA,ceiling_distAB,p_value,observed_corr] = Corr_Significance(dataB_r,dataA_r, plotOptions.Bootstrap, plotOptions.Split);
                         
-                        fig = figure('Visible','off');
-                        Graph_Significance_H(observed_corr, ceiling_distAA,ceiling_distAB, p_value,plotOptions.Amp);
-                        set(gca, 'XTick', []);
-                        title(sprintf('%s vs %s\n%s', plotOptions.NameA, plotOptions.NameB, plotOptions.Property), 'FontSize', 18*plotOptions.Amp);
+                        % ---plot histgram ---
+                        title = sprintf('%s vs %s\n%s', plotDataA.Name, plotDataB.Name, plotOptions.Property);
+                        plotFileName = sprintf('%svs%s_%s_Significance_%s.jpg', plotDataA.Name, plotDataB.Name, plotOptions.Property, plotOptions.Mode);
+                        plotFullPath = fullfile(obj.ResultDir, plotFileName);
+                        Graph_Significance_H(observed_corr, ceiling_distAA,ceiling_distAB, p_value,plotOptions.Amp,title,plotFullPath);
 
                     case {"HM", "HS"}
                         if plotOptions.Mode == "HS"
-                            % HSモードは次元を入れ替える
                             dataA_r = squeeze(mean(dataA,2));
                             dataB_r = squeeze(mean(dataB,2));
                             labels = obj.ShapeNames;
@@ -504,7 +506,7 @@ classdef DataAnalyzer < handle
                             dataB_r = squeeze(mean(dataB,3));
                             labels = obj.MatNames3;
                         end
-
+ 
                         loopLimit = size(dataA_r, 2);
                         
                         ceiling_distAA_list = zeros(plotOptions.Bootstrap,loopLimit);
@@ -515,7 +517,7 @@ classdef DataAnalyzer < handle
                         for i = 1:loopLimit
                             dataA_r2 = squeeze(dataA_r(:,i,:,:));
                             dataB_r2 = squeeze(dataB_r(:,i,:,:));
-                            fprintf("%s",labels(i));
+                            fprintf("%s",string(labels(i)));
                             [ceiling_distAA,ceiling_distAB,p_value,observed_corr] = Corr_Significance(dataA_r2, dataB_r2, plotOptions.Bootstrap, plotOptions.Split);
                             %[ceiling_distAA,ceiling_distAB,p_value,observed_corr] = Corr_Significance(dataB_r2,dataA_r2, plotOptions.Bootstrap, plotOptions.Split);
                             
@@ -525,12 +527,12 @@ classdef DataAnalyzer < handle
                             observed_corr_list(i) = observed_corr;
                         end
 
-                        % --- plot ---
-                        fig = figure('Visible','off');
-                        Graph_Significance_MS(observed_corr_list, ceiling_distAA_list,ceiling_distAB_list, p_value_list,plotOptions.Amp,loopLimit);
-                        set(gca, 'XTick', 1:length(labels), 'XTickLabel', labels);
-                        title(sprintf('%s vs %s\n%s', plotOptions.NameA, plotOptions.NameB, plotOptions.Property), 'FontSize', 18*plotOptions.Amp);
-
+                        % --- plot hist ---
+                        title = sprintf('%s vs %s\n%s', plotDataA.Name, plotDataB.Name, plotOptions.Property);
+                        plotFileName = sprintf('%svs%s_%s_Significance_%s.jpg', plotDataA.Name, plotDataB.Name, plotOptions.Property, plotOptions.Mode);
+                        plotFullPath = fullfile(obj.ResultDir, plotFileName);
+                        Graph_Significance_MS(observed_corr_list, ceiling_distAA_list,ceiling_distAB_list, p_value_list,plotOptions.Amp,loopLimit,title,plotFullPath,labels);
+                        
                     case "HMS"
                         [~,MatNum,ShapeNum,~,~] = size(dataA);
                         
@@ -553,26 +555,110 @@ classdef DataAnalyzer < handle
                             end
                         end
                         
-                        % --- plot ---
+                        % --- plot histgram ---
                         Graph_Significance_HMS(observed_corr_list, ceiling_distAA_list,ceiling_distAB_list, p_value_list,...
-                            plotOptions.NameA, plotOptions.NameB, obj.MatNames1, obj.ShapeNames, obj.ResultDir, plotOptions.Amp);
+                            plotDataA.Name, plotDataB.Name, obj.MatNames1, obj.ShapeNames, obj.ResultDir, plotOptions.Amp);
                         
                         return;
-
-                    case "model_H"
-                        % dataA vs ModelC
-                        obj.generateSingleModelPlot(plotData.targetA, plotData.targetC, plotOptions.NameA, plotOptions.NameC, plotOptions);
-                        % dataB vs ModelC
-                        obj.generateSingleModelPlot(plotData.targetB, plotData.targetC, plotOptions.NameB, plotOptions.NameC, plotOptions);
-                        return; % 2つのプロットを個別作成するため、ここで終了
                 end
 
-                % H, HM, HS モードの共通保存処理
-                grid on;
-                plotFileName = sprintf('%svs%s_%s_Significance_%s.jpg', plotOptions.NameA, plotOptions.NameB, plotOptions.Property, plotOptions.Mode);
-                plotFullPath = fullfile(obj.ResultDir, plotFileName);
-                saveas(fig, plotFullPath);
-                fprintf('  -> %s モードのグラフを保存しました: %s\n', plotOptions.Mode, plotFullPath);
+            catch ME
+                rethrow(ME);
+            end
+        end
+        
+        %% Bootstrap boxplot
+        function generateBootstrapDistribution(obj, plotData, plotOptions)
+            % HMSモードはFigureを複数作成するため、特別に処理
+            if plotOptions.Mode == "HMS"
+                for mat = 1:size(plotData.target, 2)
+                    obj.BootstrapDistribution(plotData, plotOptions, mat);
+                end
+            else
+                % H, HM, HSモードは単一のFigureを作成
+                obj.BootstrapDistribution(plotData, plotOptions);
+            end
+        end
+        
+        function BootstrapDistribution(obj, plotData, plotOptions,mat_idx)
+            if nargin < 4
+                mat_idx = [];
+            end
+            
+            data = plotData.target;
+            
+            try
+                fig = figure('Visible', 'off');
+                switch plotOptions.Mode
+                    case "H"
+                        data_r = squeeze(mean(mean(data,3),2));
+                        
+                        [all_sampled_data] = Bootstrap_distribution(data_r,plotOptions.Bootstrap, plotOptions.Split);
+                        
+                        % ---plot scatter ---                       
+                        sampled_data = reshape(all_sampled_data,size(all_sampled_data,1),[]);
+                        average_data = zscore(obj.MeanArray(data_r,1));
+                        plotBoxPlot(sampled_data,average_data,'YLabel',plotOptions.Property,'Labels',obj.HDRNum_30);
+
+                    case {"HM", "HS"}
+                        if plotOptions.Mode == "HS"
+                            % HSモードは次元を入れ替える
+                            data_r = squeeze(mean(data,2));
+                            labels = obj.ShapeNames;
+                            tiledlayout(2,3,'TileSpacing', 'compact', 'Padding', 'compact');
+                        else % HMモード
+                            data_r = squeeze(mean(data,3));
+                            labels = obj.MatNames3;
+                            tiledlayout(2,2,'TileSpacing', 'compact', 'Padding', 'compact');
+                        end
+ 
+                        loopLimit = size(data_r, 2);
+                        
+                        sgtitle(sprintf("%s Boxplot_%s",plotData.Name,plotOptions.Property), 'Interpreter', 'none');
+                        
+                        for i = 1:loopLimit
+                            nexttile;
+                            
+                            dataA_r2 = squeeze(data_r(:,i,:,:));
+                            fprintf("%s",string(labels(i)));
+                            [all_sampled_data] = Bootstrap_distribution(dataA_r2,plotOptions.Bootstrap, plotOptions.Split);
+                            
+                            titleStr = sprintf('%s',string(labels(i)));
+                            
+                            sampled_data = reshape(all_sampled_data,size(all_sampled_data,1),[]);
+                            average_data = zscore(obj.MeanArray(dataA_r2,1));
+                            plotBoxPlot(sampled_data,average_data,'Title',titleStr,'YLabel',plotOptions.Property,'Labels',obj.HDRNum_30);
+                        end
+                        
+                    case "HMS"
+                        [~,MatNum,ShapeNum,~,~] = size(data);
+                        tiledlayout(2,3,'TileSpacing', 'compact', 'Padding', 'compact');
+                        sgtitle(sprintf("%s Boxplot_%s",plotData.Name,plotOptions.Property), 'Interpreter', 'none');
+                        
+                        for shape = 1:ShapeNum
+                            nexttile;
+                            
+                            data_r = squeeze(data(:,mat_idx,shape,:,:));
+                            fprintf("mat:%s, shape:%s",string(obj.MatNames1(mat_idx)),string(obj.ShapeNames(shape)));
+                            [all_sampled_data] = Bootstrap_distribution(data_r,plotOptions.Bootstrap, plotOptions.Split);
+                            
+                            titleStr = sprintf('%s',string(obj.ShapeNames(shape)));
+                            sampled_data = reshape(all_sampled_data,size(all_sampled_data,1),[]);
+                            average_data = zscore(obj.MeanArray(data_r,1));
+                            plotBoxPlot(sampled_data,average_data,'Title',titleStr);
+                        end
+                end
+                
+                % ファイル名の決定と保存
+                filename_suffix = plotOptions.Mode;
+                if plotOptions.Mode == "HMS"
+                    filename_suffix = plotOptions.Mode + string(obj.MatNames3(mat_idx));
+                end
+                plotFileNameA = sprintf('%s_%s_%s_Significance_Boxplot.jpg',plotData.Name, plotOptions.Property, filename_suffix);
+                plotFullPathA = fullfile(obj.ResultDir, plotFileNameA);
+                saveas(fig, plotFullPathA);
+                
+                fprintf('  -> 散布図を保存しました\n');
 
             catch ME
                 rethrow(ME);

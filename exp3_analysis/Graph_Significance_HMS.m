@@ -8,12 +8,6 @@ for mat = 1:length(MatNames)
         % coef and slope
         r_value = observed_corr_list(mat,shape);
 
-        maxValue = max(ceiling_distAB_list(:,mat,shape));
-        minValue = min(ceiling_distAB_list(:,mat,shape));
-        centerValue = mean(ceiling_distAB_list(:,mat,shape));
-        upperError = maxValue - centerValue;
-        lowerError = centerValue - minValue;
-
         % coef hisgram
         x_axis = shape;
         
@@ -25,6 +19,11 @@ for mat = 1:length(MatNames)
         bar_width = 0.4;
         bar_coef = bar(x_axis,r_value,bar_width, 'FaceColor', 'b', 'DisplayName', 'Coef');
 
+        maxValue = max(ceiling_distAB_list(:,mat,shape));
+        minValue = min(ceiling_distAB_list(:,mat,shape));
+        centerValue = mean(ceiling_distAB_list(:,mat,shape));
+        upperError = maxValue - centerValue;
+        lowerError = centerValue - minValue;
         errorbar(x_axis, centerValue, lowerError, upperError, 'o', 'LineWidth', 1.0);
 
         graphtext1 = sprintf('%.2f',r_value);

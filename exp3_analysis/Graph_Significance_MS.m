@@ -1,7 +1,8 @@
-function [] = Graph_Significance_MS(observed_corr, noise_ceiling_distAA,noise_ceiling_distAB, p_value,amp,repeater)
+function [] = Graph_Significance_MS(observed_corr, noise_ceiling_distAA,noise_ceiling_distAB, p_value,amp,repeater,title_str,savepath,labels)
 %   observed_corr      - 観測された相関係数（例: corr(A,B)）
 %   noise_ceiling_dist - ノイズ天井の経験分布（例: corr(A,A')の分布）
 %   p_value            - 事前に計算した検定のp値
+fig = figure('Visible','off');
 
 for i = 1:repeater
     % coef hisgram
@@ -41,4 +42,10 @@ for i = 1:repeater
     ylabel('Correlation Coefficient','FontSize',18*amp);
     hold off;
 end
+
+grid on;
+set(gca, 'XTick', 1:length(labels), 'XTickLabel', labels);
+title(title_str, 'FontSize', 18*amp);
+saveas(fig, savepath);
+fprintf('モードのグラフを保存しました\n');
 end
