@@ -480,6 +480,7 @@ classdef DataAnalyzer < handle
         function generateBootstrapPlot(obj, plotDataA,plotDataB, plotOptions)
             dataA = plotDataA.target;
             dataB = plotDataB.target;
+            plotOptions.Amp = 1;
             
             try
                 switch plotOptions.Mode
@@ -598,7 +599,8 @@ classdef DataAnalyzer < handle
                         % ---plot scatter ---                       
                         sampled_data = reshape(all_sampled_data,size(all_sampled_data,1),[]);
                         average_data = zscore(obj.MeanArray(data_r,1));
-                        plotBoxPlot(sampled_data,average_data,'YLabel',plotOptions.Property,'Labels',obj.HDRNum_30);
+                        title_str = sprintf("%s Boxplot_%s",plotData.Name,plotOptions.Property);
+                        plotBoxPlot(sampled_data,average_data,'YLabel',plotOptions.Property,'Labels',obj.HDRNum_30,'Amp',1.0,'Title',title_str);
 
                     case {"HM", "HS"}
                         if plotOptions.Mode == "HS"

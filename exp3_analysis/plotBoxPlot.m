@@ -53,7 +53,7 @@ scatter(ax, 1:numel(sorted_scatter_values), sorted_scatter_values, ...
 
 %% 4. グラフの体裁を調整
 grid on;
-title(ax, options.Title, 'FontSize', 16 * options.Amp);
+title(ax, options.Title, 'FontSize', 16 * options.Amp, 'Interpreter', 'none');
 xlabel(ax, options.XLabel, 'FontSize', 12 * options.Amp);
 ylabel(ax, options.YLabel, 'FontSize', 12 * options.Amp);
 legend(ax, 'Location', 'southeast');

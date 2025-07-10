@@ -27,10 +27,10 @@ for mat = 1:length(MatNames)
         errorbar(x_axis, centerValue, lowerError, upperError, 'o', 'LineWidth', 1.0);
 
         graphtext1 = sprintf('%.2f',r_value);
-        text(x_axis-0.1,(abs(r_value)+0.06)*r_value/abs(r_value),graphtext1,'HorizontalAlignment','center','VerticalAlignment','bottom','FontSize',8*amp);
+        text(x_axis-0.5,(abs(r_value)-0.05)*r_value/abs(r_value),graphtext1,'HorizontalAlignment','center','VerticalAlignment','bottom','FontSize',8*amp);
         if p_value_list(mat,shape) < 0.05
             graphtext3 = sprintf('*');
-            text(x_axis,(abs(r_value)+0.12)*r_value/abs(r_value),graphtext3,'HorizontalAlignment','center','VerticalAlignment','bottom','FontSize',12*amp);
+            text(x_axis,(abs(r_value)+0.05)*r_value/abs(r_value),graphtext3,'HorizontalAlignment','center','VerticalAlignment','bottom','FontSize',12*amp);
         end
 
         ylim([-0.1,1.1]);
@@ -45,7 +45,7 @@ for mat = 1:length(MatNames)
     xlabel('Shape types','FontSize',18*amp);
     ylabel('Correlation Coefficient','FontSize',18*amp);
     title(sprintf('%s VS %s Correlation Coefficient\n%s',NameA,NameB,string(MatNames(mat))),'FontSize',18*amp);
-    text(x_Limits(1)*0.9,y_Limits(2)*0.95, '* : p < 0.05', 'FontSize', 15*amp);
+    text(x_Limits(1)*0.9,y_Limits(2)*0.95, '* : p < 0.05', 'FontSize', 10*amp);
     %legend([bar_coef, VR_bar,VR_95CI], {'Row data', 'VR bar','VR 95 CI'}, 'Location', 'best','Orientation','vertical');
     hold off;
     plotname = sprintf('%s/%svs%s_Coefbar_HMS_%s.jpg',savepath, NameA,NameB,string(MatNames(mat)));

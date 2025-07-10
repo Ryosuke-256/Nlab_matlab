@@ -28,7 +28,7 @@ lowerError = centerValue - minValue;
 errorbar(x_axis, centerValue,lowerError,upperError, 'o', 'LineWidth', 1.0);
 
 graphtext1 = sprintf('%.2f',observed_corr);
-text(1*0.9,(abs(observed_corr)+0.06)*observed_corr/abs(observed_corr),graphtext1,'HorizontalAlignment','center','VerticalAlignment','bottom','FontSize',8*amp);
+text(1-0.5,(abs(observed_corr)-0.05)*observed_corr/abs(observed_corr),graphtext1,'HorizontalAlignment','center','VerticalAlignment','bottom','FontSize',8*amp);
 if p_value < 0.05
     graphtext3 = sprintf('*');
     text(1,(abs(observed_corr)+0.05)*observed_corr/abs(observed_corr),graphtext3,'HorizontalAlignment','center','VerticalAlignment','bottom','FontSize',12*amp);
@@ -41,7 +41,7 @@ x_Limits = xlim;
 aveorigin = mean(noise_ceiling_distAA);
 bar_plot = yline(aveorigin, 'k--', 'LineWidth', 1.2, 'DisplayName', 'Within-subject average');
 
-text(x_Limits(1)*0.9,y_Limits(2)*0.95, '* : p < 0.05', 'FontSize', 15*amp);
+text(x_Limits(1)*0.9,y_Limits(2)*0.95, '* : p < 0.05', 'FontSize', 10*amp);
 ylabel('Correlation Coefficient','FontSize',18*amp);
 
 hold off;
