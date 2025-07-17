@@ -18,14 +18,14 @@ for foldernum1 = 1:numFolders1
     numFile2 = sum(~ismember({dirInfo2(:).name}, {'.', '..'}));
     for foldernum2 = 1:numFile2
         datafile = fullfile(namefolder,FileNames2{foldernum2});
-        disp(datafile);
+        %disp(datafile);
 
         csvData = readtable(datafile,'ReadVariableNames', true,'VariableNamingRule','preserve');
         headers = csvData.Properties.VariableNames;
         %avscore = reshape(mean(csvData{:,:},1),1,[]);
         Rowdata = table2array(csvData);
 
-        disp(headers)
+        %disp(headers)
 
         %words
         words = split(FileNames2{foldernum2},{'_', '.'});

@@ -1,13 +1,10 @@
-function [ceiling_distAA,ceiling_distAB,p_value,observed_corr,all_sampled_dataA,all_sampled_dataB] = Corr_Significance(dataA,dataB,num_bootstrap, num_splits)
+function [ceiling_distAA,ceiling_distAB,p_value,observed_corr,all_sampled_dataA,all_sampled_dataB] = Corr_Significance_v2(dataA,dataB,num_bootstrap, num_splits)
 rng('shuffle')
 
 % 結果保存用
 correlationDiffs = zeros(num_bootstrap, 1);
 ceiling_distAA = zeros(num_bootstrap,1);
 ceiling_distAB = zeros(num_bootstrap,1);
-
-all_sampled_dataA = zeros(size(dataA,1),num_bootstrap,num_splits,2);
-all_sampled_dataB = zeros(size(dataA,1),num_bootstrap,num_splits,2);
 
 [num_cond_A, num_subjects_A, num_trials_A] = size(dataA);
 [num_cond_B, num_subjects_B, num_trials_B] = size(dataB);
@@ -16,6 +13,9 @@ Zs_meaned_dataA = zscore(MeanArray(dataA,1));
 Zs_meaned_dataB = zscore(MeanArray(dataB,1));
 observed_corr = corr(Zs_meaned_dataA,Zs_meaned_dataB);
 
+all_sampled_dataA = zeros(size(dataA,1),num_bootstrap,num_splits,2);
+all_sampled_dataB = zeros(size(dataB,1),num_bootstrap,num_splits,2);
+
 % === ステップ2: リサンプリング ===
 % ---  被験者リサンプリング ---
 for i = 1:num_bootstrap
@@ -23,13 +23,11 @@ for i = 1:num_bootstrap
     boot_subj_indices_A = randi(num_subjects_A, 1, num_subjects_A);
     resampled_data_A = dataA(:, boot_subj_indices_A, :);
     split_half_corrs_AA = zeros(num_splits, 1);
-    sampled_dataA = zeros(num_splits,1);
     
     % === dataB ==
     boot_subj_indices_B = randi(num_subjects_B, 1, num_subjects_B);
     resampled_data_B = dataB(:, boot_subj_indices_B, :);
     split_half_corrs_AB = zeros(num_splits, 1);
-    sampled_dataB = zeros(num_splits,1);
     
     % ---応答リサンプリング (Split-Half法)  ---
     for j = 1:num_splits
@@ -39,15 +37,13 @@ for i = 1:num_bootstrap
         split_half_corrs_AA(j) = corr(pattern1_A, pattern2_A);
         split_half_corrs_AB(j) = corr(pattern1_A, pattern1_B);
         
-        sampled_dataA(j)= mean(pattern1_A, pattern2_A);
-        sampled_dataA(j)= mean(pattern1_A, pattern2_A);
+        %個別データ保存
+        all_sampled_dataA(:,i,j,1)= pattern1_A;
+        all_sampled_dataA(:,i,j,2)= pattern2_A;
+        all_sampled_dataB(:,i,j,1)= pattern1_B;
+        all_sampled_dataB(:,i,j,2)= pattern2_B;
         
-        all_sampled_dataA(:,i,j,1) = pattern1_A;
-        all_sampled_dataA(:,i,j,2) = pattern2_A;
-        all_sampled_dataB(:,i,j,1) = pattern1_B;
-        all_sampled_dataB(:,i,j,2) = pattern2_B;
-    end
-    
+    end   
     ceiling_distAA(i) = mean(split_half_corrs_AA);
     ceiling_distAB(i) = mean(split_half_corrs_AB);
     

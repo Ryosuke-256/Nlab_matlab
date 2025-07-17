@@ -1,4 +1,4 @@
-function plotBoxPlot(box_data, scatter_data, options)
+function plotBoxPlot(ax,box_data, scatter_data, options)
 %plotBoxPlot 指定されたFigureハンドルに、散布図と箱ひげ図を重ねて表示します。
 %
 % [説明]
@@ -18,12 +18,13 @@ function plotBoxPlot(box_data, scatter_data, options)
 
 %% 1. 引数の定義と検証
 arguments
+    ax (1,1) matlab.graphics.axis.Axes
     box_data (:,:) {mustBeNumeric, mustBeReal}
     scatter_data (:,1) {mustBeNumeric, mustBeReal}
     options.Title (1,1) string = "Scatter Plot with Box Plot Overlay"
     options.XLabel (1,1) string = "Sorted Condition Index"
     options.YLabel (1,1) string = "Value"
-    options.Amp    (1,1) double = 1
+    options.Amp    (1,1) double = 1.0
     options.Labels (1,:) string = []
 end
 
@@ -37,7 +38,8 @@ end
 sorted_box_data = box_data(sort_indices, :);
 
 %% 3. 描画
-ax = gca; % これで確実にfigのAxesが取得される
+%cla(ax, 'reset');
+
 hold(ax, 'on');
 
 % 箱ひげ図を先に描画
@@ -52,17 +54,17 @@ scatter(ax, 1:numel(sorted_scatter_values), sorted_scatter_values, ...
     10, 'r', 'filled', 'DisplayName', 'Experiment value');
 
 %% 4. グラフの体裁を調整
-grid on;
-title(ax, options.Title, 'FontSize', 16 * options.Amp, 'Interpreter', 'none');
-xlabel(ax, options.XLabel, 'FontSize', 12 * options.Amp);
-ylabel(ax, options.YLabel, 'FontSize', 12 * options.Amp);
+title(ax, options.Title, 'FontSize', 24 * options.Amp, 'Interpreter', 'none');
+xlabel(ax, options.XLabel, 'FontSize', 18 * options.Amp);
+ylabel(ax, options.YLabel, 'FontSize', 18 * options.Amp);
 legend(ax, 'Location', 'southeast');
 xlim(ax, [0, numel(sorted_scatter_values) + 1]);
 
 x_ticklabels = options.Labels(sort_indices);
 xticklabels(x_ticklabels);
 xtickangle(90);
-set(gca,'FontSize',6 * options.Amp);
+set(ax,'FontSize',6 * options.Amp);
 
+grid(ax, 'on');
 hold(ax, 'off');
 end

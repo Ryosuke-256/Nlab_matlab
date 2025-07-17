@@ -1,4 +1,4 @@
-function [] = Graph_Significance_H(observed_corr, noise_ceiling_distAA,noise_ceiling_distAB, p_value,amp,title_str,savepath)
+function Graph_Significance_H(observed_corr, noise_ceiling_distAA,noise_ceiling_distAB, p_value,amp,title_str,savepath)
 %   observed_corr      - 観測された相関係数（例: corr(A,B)）
 %   noise_ceiling_dist - ノイズ天井の経験分布（例: corr(A,A')の分布）
 %   p_value            - 事前に計算した検定のp値
@@ -48,7 +48,4 @@ hold off;
 
 grid on;
 set(gca, 'XTick', []);
-title(title_str, 'FontSize', 18*amp);
-saveas(fig, savepath);
-fprintf('モードのグラフを保存しました\n');
 end
