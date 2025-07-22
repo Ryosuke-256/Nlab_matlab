@@ -552,10 +552,13 @@ classdef DataAnalyzer < handle
                         
                         [ceiling_distAA,ceiling_distAB,p_value,observed_corr,all_sampled_dataA,all_sampled_dataB] = Corr_Significance_v2(dataA_r, dataB_r, plotOptions.Bootstrap, plotOptions.Split);
                         
+                        % sgtitle
+                        sgTitle = sprintf("%s - %s- all condition",plotDataA.Name,plotOptions.Property);
+                        
                         % ---plot significance ---
                         t_significance = tiledlayout(fig_significance,1,1, 'Padding', 'normal');
                         ax_significance = nexttile(t_significance);
-                        Graph_Significance(ax_significance,observed_corr, ceiling_distAA,ceiling_distAB, p_value,'Amp',plotOptions.Amp,'Title',plotOptions.Title);
+                        Graph_Significance(ax_significance,observed_corr, ceiling_distAA,ceiling_distAB, p_value,'Amp',plotOptions.Amp,'Title',sgTitle);
                         
                         %% ---plot innner correlation coefficient ---
                         t_boxplot = tiledlayout(fig_boxplotA,1,1, 'Padding', 'normal');
@@ -572,14 +575,12 @@ classdef DataAnalyzer < handle
                         plotDataA_r.Name = plotDataA.Name;
                         plotDataA_r.Resampled = all_sampled_dataA;
                         plotDataA_r.Corr = ceiling_distAA;
-                        plotOptions.Minititle = "";
+                        plotOptions.Title = "";
                         
-                        % sgtitle
-                        Title = sprintf("%s - %s",plotDataA.Name,plotOptions.Property);
-                        sgtitle(t_boxplot, Title, 'Interpreter', 'none');
-                        sgtitle(t_frequency, Title, 'Interpreter', 'none');
-                        sgtitle(t_scatter, Title, 'Interpreter', 'none');
-                        sgtitle(t_scatter2, Title, 'Interpreter', 'none');
+                        sgtitle(t_boxplot, sgTitle, 'Interpreter', 'none');
+                        sgtitle(t_frequency, sgTitle, 'Interpreter', 'none');
+                        sgtitle(t_scatter, sgTitle, 'Interpreter', 'none');
+                        sgtitle(t_scatter2, sgTitle, 'Interpreter', 'none');
                         
                         % draw
                         if plotOptions.Distribution
@@ -591,20 +592,24 @@ classdef DataAnalyzer < handle
                             dataA_r = squeeze(mean(dataA,2));
                             dataB_r = squeeze(mean(dataB,2));
                             labels = obj.ShapeNames;
+                            % sgtitle
+                            sgTitle = sprintf("%s - %s- shape",plotDataA.Name,plotOptions.Property);
                             
-                            t_boxplot = tiledlayout(fig_boxplotA,2,3, 'Padding', 'normal');
-                            t_frequency = tiledlayout(fig_frequencyA,2,3, 'Padding', 'normal');
-                            t_scatter = tiledlayout(fig_scatterA,2,3, 'Padding', 'normal');
-                            t_scatter2 = tiledlayout(fig_scatter2A,2,3, 'Padding', 'normal'); 
+                            t_boxplot = tiledlayout(fig_boxplotA,2,3, 'TileSpacing', 'compact', 'Padding', 'compact');
+                            t_frequency = tiledlayout(fig_frequencyA,2,3, 'TileSpacing', 'compact', 'Padding', 'compact');
+                            t_scatter = tiledlayout(fig_scatterA,2,3, 'TileSpacing', 'compact', 'Padding', 'compact');
+                            t_scatter2 = tiledlayout(fig_scatter2A,2,3, 'TileSpacing', 'compact', 'Padding', 'compact'); 
                         else % HMモード
                             dataA_r = squeeze(mean(dataA,3));
                             dataB_r = squeeze(mean(dataB,3));
                             labels = obj.MatNames3;
+                            % sgtitle
+                            sgTitle = sprintf("%s - %s- material",plotDataA.Name,plotOptions.Property);
                             
-                            t_boxplot = tiledlayout(fig_boxplotA,2,2, 'Padding', 'normal');
-                            t_frequency = tiledlayout(fig_frequencyA,2,2, 'Padding', 'normal');
-                            t_scatter = tiledlayout(fig_scatterA,2,2, 'Padding', 'normal');
-                            t_scatter2 = tiledlayout(fig_scatter2A,2,2, 'Padding', 'normal'); 
+                            t_boxplot = tiledlayout(fig_boxplotA,2,2, 'TileSpacing', 'compact', 'Padding', 'compact');
+                            t_frequency = tiledlayout(fig_frequencyA,2,2, 'TileSpacing', 'compact', 'Padding', 'compact');
+                            t_scatter = tiledlayout(fig_scatterA,2,2,'TileSpacing', 'compact', 'Padding', 'compact');
+                            t_scatter2 = tiledlayout(fig_scatter2A,2,2, 'TileSpacing', 'compact', 'Padding', 'compact'); 
                         end
                          
                         % ---graph initialization
@@ -626,16 +631,20 @@ classdef DataAnalyzer < handle
                             [ceiling_distAA,ceiling_distAB,p_value,observed_corr,all_sampled_dataA,all_sampled_dataB] = Corr_Significance_v2(dataA_r2, dataB_r2, plotOptions.Bootstrap, plotOptions.Split);
                             
                             % ---plot significance hist ---
-                            Graph_Significance(ax_significance,observed_corr, ceiling_distAA,ceiling_distAB, p_value, i,'Amp',plotOptions.Amp,'Title',plotOptions.Title);
+                            Graph_Significance(ax_significance,observed_corr, ceiling_distAA,ceiling_distAB, p_value, i,'Amp',plotOptions.Amp,'Title',sgTitle);
                             
                             % ---plot innner correlation coefficient ---
                             plotDataA_r.Original = dataA_r2;
                             plotDataA_r.Name = plotDataA.Name;
                             plotDataA_r.Resampled = all_sampled_dataA;
-                            plotOptions.Minititle = string(labels(i));
+                            plotDataA_r.Corr = ceiling_distAA;
+                            plotOptions.Title = string(labels(i));
                             
-                            %sgtitle
-                            sgtitle(t_boxplot, plotOptions.Title, 'Interpreter', 'none');
+                            % sgtitle
+                            sgtitle(t_boxplot, sgTitle, 'Interpreter', 'none');
+                            sgtitle(t_frequency, sgTitle, 'Interpreter', 'none');
+                            sgtitle(t_scatter, sgTitle, 'Interpreter', 'none');
+                            sgtitle(t_scatter2, sgTitle, 'Interpreter', 'none');
                             
                             if plotOptions.Distribution
                                 obj.plotBootstrapDistribution(figListA,plotDataA_r,plotOptions);
@@ -646,14 +655,23 @@ classdef DataAnalyzer < handle
                         set(ax_significance, 'XTick', 1:length(labels), 'XTickLabel', labels);
                         
                     case "HMS"
-                        [~,MatNum,ShapeNum,~,~] = size(dataA);                        
+                        [~,MatNum,ShapeNum,~,~] = size(dataA);
+                        % sgtitle
+                        sgTitle = sprintf("%s - %s- shape & material",plotDataA.Name,plotOptions.Property);
                         
                         % --- initialization graph
                         t_significance = tiledlayout(fig_significance,1,1, 'Padding', 'normal');
                         ax_significance = nexttile(t_significance);
                         
                         t_boxplot = tiledlayout(fig_boxplotA,2,3,'TileSpacing', 'compact', 'Padding', 'compact');
+                        t_frequency = tiledlayout(fig_frequencyA,2,3, 'TileSpacing', 'compact', 'Padding', 'compact');
+                        t_scatter = tiledlayout(fig_scatterA,2,3, 'TileSpacing', 'compact', 'Padding', 'compact');
+                        t_scatter2 = tiledlayout(fig_scatter2A,2,3, 'TileSpacing', 'compact', 'Padding', 'compact'); 
+                        
                         figListA.boxplot = t_boxplot;
+                        figListA.frequency = t_frequency;
+                        figListA.scatter = t_scatter;
+                        figListA.scatter2 = t_scatter2;  
                         
                         for shape = 1:ShapeNum
                             dataA_r = squeeze(dataA(:,mat_idx,shape,:,:));
@@ -666,16 +684,22 @@ classdef DataAnalyzer < handle
                             % ---plot significance hist ---
                             titlestr = sprintf("%s - %s",plotOptions.Title,string(obj.MatNames3(mat_idx)));
                             sgtitle(t_significance, titlestr, 'Interpreter', 'none');
-                            Graph_Significance(ax_significance,observed_corr, ceiling_distAA,ceiling_distAB, p_value, shape,'Amp',plotOptions.Amp);
+                            Graph_Significance(ax_significance,observed_corr, ceiling_distAA,ceiling_distAB, p_value, shape,'Amp',plotOptions.Amp,'Title',sgTitle);
 
                             % ---plot innner correlation coefficient ---
                             plotDataA_r.Original = dataA_r;
                             plotDataA_r.Name = plotDataA.Name;
                             plotDataA_r.Resampled = all_sampled_dataA;
-                            plotOptions.Minititle = string(obj.ShapeNames(shape));
+                            plotDataA_r.Corr = ceiling_distAA;
+                            plotOptions.Title = string(obj.ShapeNames(shape));
 
                             titlestr = sprintf("%s - %s",plotOptions.Title,string(obj.MatNames3(mat_idx)));
                             sgtitle(t_boxplot, titlestr, 'Interpreter', 'none');
+                            
+                            sgtitle(t_boxplot, sgTitle, 'Interpreter', 'none');
+                            sgtitle(t_frequency, sgTitle, 'Interpreter', 'none');
+                            sgtitle(t_scatter, sgTitle, 'Interpreter', 'none');
+                            sgtitle(t_scatter2, sgTitle, 'Interpreter', 'none');
 
                             if plotOptions.Distribution
                                 obj.plotBootstrapDistribution(figListA,plotDataA_r,plotOptions);
@@ -740,16 +764,17 @@ classdef DataAnalyzer < handle
             average_data = zscore(obj.MeanArray(plotData.Original,1));
             
             ax_boxplot = nexttile(figList.boxplot);
-            plotBoxPlot(ax_boxplot,resampled_data_1,average_data,'YLabel',plotOptions.Property,'Labels',obj.HDRNum_30,'Amp',plotOptions.Amp,'Title',plotOptions.Minititle);
+            plotBoxPlot(ax_boxplot,resampled_data_1,average_data,'YLabel',plotOptions.Property,'Labels',obj.HDRNum_30,'Amp',plotOptions.Amp,'Title',plotOptions.Title);
             
             ax_frequency = nexttile(figList.frequency);
-            obj.plotCorrelationDistribution(ax_frequency,plotData.Corr);
+            obj.plotCorrelationDistribution(ax_frequency,plotData.Corr,'Amp',plotOptions.Amp,'Title',plotOptions.Title);
             
             ax_scatter1 = nexttile(figList.scatter);
-            plotScatterWithErrorBars(ax_scatter1,resampled_data_1,average_data);
+            
+            plotScatterWithErrorBars(ax_scatter1,resampled_data_1,average_data,"Title", plotOptions.Title,"Amp", plotOptions.Amp, "YLabel", plotOptions.Property);
             
             ax_scatter2 = nexttile(figList.scatter2);
-            obj.plotSampleScatter(ax_scatter2,resampled_data_2);
+            obj.plotSampleScatter(ax_scatter2,resampled_data_2,'Amp',plotOptions.Amp,'Title',plotOptions.Title);
         end
 
         %% --- プロット2: 相関係数分布のヒストグラム描画 ---
@@ -759,15 +784,17 @@ classdef DataAnalyzer < handle
                 obj
                 ax
                 corrs
-                plotOptions.Title = ""
+                plotOptions.Title  = ""
+                plotOptions.Amp = 1.0
             end
 
             histogram(ax, corrs, 'NumBins', 30, 'FaceColor', [0.3, 0.7, 0.9], 'EdgeColor', 'k');
 
             grid(ax, 'on');
             title(ax, plotOptions.Title,'Interpreter', 'none');
-            xlabel(ax, 'Correlation Coefficient','Interpreter', 'none');
-            ylabel(ax, 'Frequency','Interpreter', 'none');
+            xlabel(ax, 'Correlation Coefficient','Interpreter', 'none','FontSize',8 * plotOptions.Amp);
+            ylabel(ax, 'Frequency','Interpreter', 'none','FontSize',8 * plotOptions.Amp);
+            set(ax, 'FontSize', 8 * plotOptions.Amp);
         end
 
         %% --- プロット3: 2セットのデータの散布図描画 ---
@@ -778,6 +805,9 @@ classdef DataAnalyzer < handle
                 ax
                 plotData 
                 plotOptions.Title  = ""
+                plotOptions.Amp = 1.0
+                plotOptions.Xlabel = "Bootstrap A"
+                plotOptions.Ylabel = "Bootstrap B"
             end
             
             a1_data = squeeze(plotData(:,1,:));
@@ -796,13 +826,27 @@ classdef DataAnalyzer < handle
             new_data_1 = a1_data(linear_indices_1);
             new_data_2 = a2_data(linear_indices_2);
             
-            scatter(ax, new_data_1, new_data_2, 50, 'o', 'MarkerEdgeColor', 'k');
+            % --- 統計モデルの構築 (一元化) ---
+            mdl = fitlm(new_data_1, new_data_2);
+            R2 = mdl.Rsquared.Ordinary;
+            r_value = sign(mdl.Coefficients.Estimate(2)) * sqrt(R2);
+            
+            scatter(ax, new_data_1, new_data_2, 30 * plotOptions.Amp, 'o','MarkerEdgeColor', 'k');
 
             grid(ax, 'on');
             title(ax, plotOptions.Title);
-            xlabel(ax, 'データセットAのサンプル');
-            ylabel(ax, 'データセットBのサンプル');
+            xlabel(ax, plotOptions.Xlabel,'FontSize',8 * plotOptions.Amp);
+            ylabel(ax, plotOptions.Ylabel,'FontSize',8 * plotOptions.Amp);
             axis(ax, 'equal'); 
+            
+            x_limits = xlim(ax);
+            y_limits = ylim(ax);
+            text_x = x_limits(1)+abs(x_limits(1)-x_limits(2))/15;
+            text_y = y_limits(2)-abs(x_limits(1)-x_limits(2))/10;
+            text(text_x, text_y, sprintf('r = %.2f\nR^2 = %.2f', r_value, R2), ...
+                 'VerticalAlignment', 'top', 'FontSize', 8 * plotOptions.Amp, ...
+                 'BackgroundColor', 'w', 'EdgeColor', 'k');
+            set(ax, 'FontSize', 8 * plotOptions.Amp);
         end
 
         %% vs model
