@@ -7,11 +7,10 @@ arguments
     p_value (1,1) double
     repeater (1,1) double = 1
     
-    options.Title (1,1) string = "Significance Histgram"
+    options.Title (1,1) string = ""
     options.XLabel (1,1) string = "Condition"
     options.YLabel (1,1) string = "Correlation Coefficient"
     options.Amp    (1,1) double = 1
-    options.Labels (1,:) string = []
 end
 
 % coef hisgram
@@ -56,7 +55,7 @@ plot(ax, [x_axis-0.5, x_axis+0.5], [aveorigin, aveorigin], ...
      'k--', 'LineWidth', 1.0, 'DisplayName', 'Within-subject average');
  
 % 注釈 
-text(ax,x_Limits(1)*0.9,y_Limits(2)*1.05, '* : p < 0.05', 'FontSize', 10 * options.Amp);
+text(ax,x_Limits(1)*0.9,y_Limits(2)-0.05, '* : p < 0.05', 'FontSize', 10 * options.Amp);
 
 %ラベル
 ylabel(ax,options.YLabel,'FontSize',12 * options.Amp);

@@ -256,12 +256,6 @@ classdef DataAnalyzer < handle
 
             % --- 3. 統合された単一のヘルパー関数を呼び出す ---
             obj.generateBootstrapPlot(plotDataA,plotDataB, plotOptions);
-            %{
-            if options.Distribution
-                obj.generateBootstrapDistribution(plotDataA, plotOptions);
-                obj.generateBootstrapDistribution(plotDataB, plotOptions);
-            end
-            %}
 
             fprintf('プロットの作成が完了しました。\n');
         end
@@ -525,7 +519,7 @@ classdef DataAnalyzer < handle
             
             % HMSモードはFigureを複数作成するため、特別に処理
             if plotOptions.Mode == "HMS"
-                for mat = 1:size(plotData.target, 2)
+                for mat = 1:size(plotDataA.target, 2)
                     obj.BootstrapPlot(plotDataA,plotDataB, plotOptions, mat);
                 end
             else
@@ -547,6 +541,9 @@ classdef DataAnalyzer < handle
                 % figureの宣言
                 fig_significance = figure('Visible', 'off');
                 fig_boxplotA = figure('Visible', 'off');
+                fig_frequencyA = figure('Visible', 'off');
+                fig_scatterA = figure('Visible', 'off');
+                fig_scatter2A = figure('Visible', 'off');
                 
                 switch plotOptions.Mode
                     case "H"
@@ -560,14 +557,31 @@ classdef DataAnalyzer < handle
                         ax_significance = nexttile(t_significance);
                         Graph_Significance(ax_significance,observed_corr, ceiling_distAA,ceiling_distAB, p_value,'Amp',plotOptions.Amp,'Title',plotOptions.Title);
                         
-                        % ---plot innner correlation coefficient ---
+                        %% ---plot innner correlation coefficient ---
                         t_boxplot = tiledlayout(fig_boxplotA,1,1, 'Padding', 'normal');
                         figListA.boxplot = t_boxplot;
+                        t_frequency = tiledlayout(fig_frequencyA,1,1, 'Padding', 'normal');
+                        figListA.frequency = t_frequency;
+                        t_scatter = tiledlayout(fig_scatterA,1,1, 'Padding', 'normal');
+                        figListA.scatter = t_scatter;
+                        t_scatter2 = tiledlayout(fig_scatter2A,1,1, 'Padding', 'normal');
+                        figListA.scatter2 = t_scatter2;                      
                         
+                        % data
                         plotDataA_r.Original = dataA_r;
                         plotDataA_r.Name = plotDataA.Name;
                         plotDataA_r.Resampled = all_sampled_dataA;
+                        plotDataA_r.Corr = ceiling_distAA;
+                        plotOptions.Minititle = "";
                         
+                        % sgtitle
+                        Title = sprintf("%s - %s",plotDataA.Name,plotOptions.Property);
+                        sgtitle(t_boxplot, Title, 'Interpreter', 'none');
+                        sgtitle(t_frequency, Title, 'Interpreter', 'none');
+                        sgtitle(t_scatter, Title, 'Interpreter', 'none');
+                        sgtitle(t_scatter2, Title, 'Interpreter', 'none');
+                        
+                        % draw
                         if plotOptions.Distribution
                             obj.plotBootstrapDistribution(figListA,plotDataA_r,plotOptions);
                         end
@@ -577,18 +591,30 @@ classdef DataAnalyzer < handle
                             dataA_r = squeeze(mean(dataA,2));
                             dataB_r = squeeze(mean(dataB,2));
                             labels = obj.ShapeNames;
-                            t_boxplot = tiledlayout(fig_boxplotA,2,3,'TileSpacing', 'compact', 'Padding', 'compact');
+                            
+                            t_boxplot = tiledlayout(fig_boxplotA,2,3, 'Padding', 'normal');
+                            t_frequency = tiledlayout(fig_frequencyA,2,3, 'Padding', 'normal');
+                            t_scatter = tiledlayout(fig_scatterA,2,3, 'Padding', 'normal');
+                            t_scatter2 = tiledlayout(fig_scatter2A,2,3, 'Padding', 'normal'); 
                         else % HMモード
                             dataA_r = squeeze(mean(dataA,3));
                             dataB_r = squeeze(mean(dataB,3));
                             labels = obj.MatNames3;
-                            t_boxplot = tiledlayout(fig_boxplotA,2,2,'TileSpacing', 'compact', 'Padding', 'compact');
+                            
+                            t_boxplot = tiledlayout(fig_boxplotA,2,2, 'Padding', 'normal');
+                            t_frequency = tiledlayout(fig_frequencyA,2,2, 'Padding', 'normal');
+                            t_scatter = tiledlayout(fig_scatterA,2,2, 'Padding', 'normal');
+                            t_scatter2 = tiledlayout(fig_scatter2A,2,2, 'Padding', 'normal'); 
                         end
                          
-                        
-                        % --- initialization significance hist
+                        % ---graph initialization
                         t_significance = tiledlayout(fig_significance,1,1, 'Padding', 'normal');
                         ax_significance = nexttile(t_significance);
+                        
+                        figListA.boxplot = t_boxplot;
+                        figListA.frequency = t_frequency;
+                        figListA.scatter = t_scatter;
+                        figListA.scatter2 = t_scatter2;  
                         
                         loopLimit = size(dataA_r, 2);                        
                         for i = 1:loopLimit
@@ -606,8 +632,10 @@ classdef DataAnalyzer < handle
                             plotDataA_r.Original = dataA_r2;
                             plotDataA_r.Name = plotDataA.Name;
                             plotDataA_r.Resampled = all_sampled_dataA;
-                            figListA.boxplot = t_boxplot;
-                            plotOptions.Title = string(labels(i));
+                            plotOptions.Minititle = string(labels(i));
+                            
+                            %sgtitle
+                            sgtitle(t_boxplot, plotOptions.Title, 'Interpreter', 'none');
                             
                             if plotOptions.Distribution
                                 obj.plotBootstrapDistribution(figListA,plotDataA_r,plotOptions);
@@ -618,32 +646,45 @@ classdef DataAnalyzer < handle
                         set(ax_significance, 'XTick', 1:length(labels), 'XTickLabel', labels);
                         
                     case "HMS"
-                        [~,MatNum,ShapeNum,~,~] = size(dataA);
+                        [~,MatNum,ShapeNum,~,~] = size(dataA);                        
                         
-                        ceiling_distAA_list = zeros(plotOptions.Bootstrap,MatNum,ShapeNum);
-                        ceiling_distAB_list = zeros(plotOptions.Bootstrap,MatNum,ShapeNum);
-                        p_value_list = zeros(MatNum,ShapeNum);
-                        observed_corr_list = zeros(MatNum,ShapeNum);
+                        % --- initialization graph
+                        t_significance = tiledlayout(fig_significance,1,1, 'Padding', 'normal');
+                        ax_significance = nexttile(t_significance);
                         
-                        for mat = 1:MatNum
-                            for shape = 1:ShapeNum
-                                dataA_r = squeeze(dataA(:,mat,shape,:,:));
-                                dataB_r = squeeze(dataB(:,mat,shape,:,:));
-                                fprintf("mat:%s, shape:%s",string(obj.MatNames1(mat)),string(obj.ShapeNames(shape)));
-                                [ceiling_distAA,ceiling_distAB,p_value,observed_corr] = Corr_Significance(dataA_r, dataB_r, plotOptions.Bootstrap, plotOptions.Split);
-                            
-                                ceiling_distAA_list(:,mat,shape) = ceiling_distAA;
-                                ceiling_distAB_list(:,mat,shape) = ceiling_distAB;
-                                p_value_list(mat,shape) = p_value;
-                                observed_corr_list(mat,shape) = observed_corr;
+                        t_boxplot = tiledlayout(fig_boxplotA,2,3,'TileSpacing', 'compact', 'Padding', 'compact');
+                        figListA.boxplot = t_boxplot;
+                        
+                        for shape = 1:ShapeNum
+                            dataA_r = squeeze(dataA(:,mat_idx,shape,:,:));
+                            dataB_r = squeeze(dataB(:,mat_idx,shape,:,:));
+                            fprintf("mat:%s, shape:%s",string(obj.MatNames1(mat_idx)),string(obj.ShapeNames(shape)));
+
+                            % calculate bootstrap
+                            [ceiling_distAA,ceiling_distAB,p_value,observed_corr,all_sampled_dataA,all_sampled_dataB] = Corr_Significance_v2(dataA_r, dataB_r, plotOptions.Bootstrap, plotOptions.Split);
+
+                            % ---plot significance hist ---
+                            titlestr = sprintf("%s - %s",plotOptions.Title,string(obj.MatNames3(mat_idx)));
+                            sgtitle(t_significance, titlestr, 'Interpreter', 'none');
+                            Graph_Significance(ax_significance,observed_corr, ceiling_distAA,ceiling_distAB, p_value, shape,'Amp',plotOptions.Amp);
+
+                            % ---plot innner correlation coefficient ---
+                            plotDataA_r.Original = dataA_r;
+                            plotDataA_r.Name = plotDataA.Name;
+                            plotDataA_r.Resampled = all_sampled_dataA;
+                            plotOptions.Minititle = string(obj.ShapeNames(shape));
+
+                            titlestr = sprintf("%s - %s",plotOptions.Title,string(obj.MatNames3(mat_idx)));
+                            sgtitle(t_boxplot, titlestr, 'Interpreter', 'none');
+
+                            if plotOptions.Distribution
+                                obj.plotBootstrapDistribution(figListA,plotDataA_r,plotOptions);
                             end
+
                         end
                         
-                        % --- plot histgram ---
-                        Graph_Significance_HMS(observed_corr_list, ceiling_distAA_list,ceiling_distAB_list, p_value_list,...
-                            plotDataA.Name, plotDataB.Name, obj.MatNames1, obj.ShapeNames, obj.ResultDir, plotOptions.Amp);
-                        
-                        return;
+                        % --- finalization graph ---
+                        set(ax_significance, 'XTick', 1:length(obj.ShapeNames), 'XTickLabel', obj.ShapeNames);
                 end
                 
                 % ファイル名の決定と保存
@@ -657,10 +698,25 @@ classdef DataAnalyzer < handle
                 saveas(fig_significance, plotFullPath);
                 
                 % about A
-                % scatter
+                % boxplot
                 plotFileName = sprintf('%s_%s_boxplot_A_%s.jpg',plotDataA.Name, plotOptions.Property, filename_suffix);
                 plotFullPath = fullfile(obj.ResultDir, plotFileName);
                 saveas(fig_boxplotA, plotFullPath);
+                
+                % frequency
+                plotFileName = sprintf('%s_%s_frequecny_A_%s.jpg',plotDataA.Name, plotOptions.Property, filename_suffix);
+                plotFullPath = fullfile(obj.ResultDir, plotFileName);
+                saveas(fig_frequencyA, plotFullPath);
+                
+                % scatter
+                plotFileName = sprintf('%s_%s_scatter_A_%s.jpg',plotDataA.Name, plotOptions.Property, filename_suffix);
+                plotFullPath = fullfile(obj.ResultDir, plotFileName);
+                saveas(fig_scatterA, plotFullPath);
+                
+                % scatter2
+                plotFileName = sprintf('%s_%s_scatter2_A_%s.jpg',plotDataA.Name, plotOptions.Property, filename_suffix);
+                plotFullPath = fullfile(obj.ResultDir, plotFileName);
+                saveas(fig_scatter2A, plotFullPath);
                 
                 fprintf('  -> 各種グラフを保存しました\n');
 
@@ -677,173 +733,76 @@ classdef DataAnalyzer < handle
                 plotOptions (1,1) struct 
             end
 
-            % ---plot scatter ---                       
-            sampled_data = reshape(plotData.Resampled,size(plotData.Resampled,1),[]);
+            % ---plot scatter ---
+            permuted_data = permute(plotData.Resampled,[1,4,2,3]);
+            resampled_data_1 = reshape(permuted_data,size(permuted_data,1),[]);
+            resampled_data_2 = reshape(permuted_data,size(permuted_data,1),size(permuted_data,2),[]);
             average_data = zscore(obj.MeanArray(plotData.Original,1));
             
             ax_boxplot = nexttile(figList.boxplot);
-            sgtitle(ax_boxplot,"", 'Interpreter', 'none');
-            plotBoxPlot(ax_boxplot,sampled_data,average_data,'YLabel',plotOptions.Property,'Labels',obj.HDRNum_30,'Amp',plotOptions.Amp,'Title',plotOptions.title);
-        end
-        
-        %% Bootstrap boxplot
-        function generateBootstrapDistribution(obj, plotData, plotOptions)
-            % ■ 入力:
-            %   plotData (struct): データセットAの仕様
-            %     - Name:     DataSetsの名前 (e.g., "Set-A")
-            %     - target:  主データ
-            %
-            %   plotOptions (名前/値ペア):
-            %     - "Property" (string): 解析対象のプロパティ名 (グラフタイトル用, e.g., "反射率")
-            %     - "Amp"      (double): 増幅係数 (デフォルト: 1.5)
-            %     - "Bootstrap"(double): Bootstrapの反復回数 (デフォルト: 10000)
-            %     - "Mode"     (double): 1:H、2:HM、3:HS、4:HMS
+            plotBoxPlot(ax_boxplot,resampled_data_1,average_data,'YLabel',plotOptions.Property,'Labels',obj.HDRNum_30,'Amp',plotOptions.Amp,'Title',plotOptions.Minititle);
             
-            % HMSモードはFigureを複数作成するため、特別に処理
-            if plotOptions.Mode == "HMS"
-                for mat = 1:size(plotData.target, 2)
-                    obj.BootstrapDistribution(plotData, plotOptions, mat);
-                end
-            else
-                % H, HM, HSモードは単一のFigureを作成
-                obj.BootstrapDistribution(plotData, plotOptions);
-            end
-        end
-        
-        function BootstrapDistribution(obj, plotData, plotOptions,mat_idx)
-            if nargin < 4
-                mat_idx = [];
-            end
+            ax_frequency = nexttile(figList.frequency);
+            obj.plotCorrelationDistribution(ax_frequency,plotData.Corr);
             
-            data = plotData.target;
+            ax_scatter1 = nexttile(figList.scatter);
+            plotScatterWithErrorBars(ax_scatter1,resampled_data_1,average_data);
             
-            try
-                % figureの宣言
-                boxplot = figure('Visible', 'off');
-                
-                switch plotOptions.Mode
-                    case "H"
-                        data_r = squeeze(mean(mean(data,3),2));
-                        
-                        [all_sampled_data] = Bootstrap_distribution(data_r,plotOptions.Bootstrap, plotOptions.Split);
-                        
-                        % ---plot scatter ---                       
-                        sampled_data = reshape(all_sampled_data,size(all_sampled_data,1),[]);
-                        average_data = zscore(obj.MeanArray(data_r,1));
-                        title_str = sprintf("%s Boxplot_%s",plotData.Name,plotOptions.Property);
-                        ax = axes('Parent', boxplot);
-                        plotBoxPlot(ax,sampled_data,average_data,'YLabel',plotOptions.Property,'Labels',obj.HDRNum_30,'Amp',1.0,'Title',title_str);
-
-                    case {"HM", "HS"}
-                        if plotOptions.Mode == "HS"
-                            % HSモードは次元を入れ替える
-                            data_r = squeeze(mean(data,2));
-                            labels = obj.ShapeNames;
-                            t_boxplot = tiledlayout(boxplot,2,3,'TileSpacing', 'compact', 'Padding', 'compact');
-                        else % HMモード
-                            data_r = squeeze(mean(data,3));
-                            labels = obj.MatNames3;
-                            t_boxplot = tiledlayout(boxplot,2,2,'TileSpacing', 'compact', 'Padding', 'compact');
-                        end
- 
-                        loopLimit = size(data_r, 2);
-                        
-                        sgtitle(sprintf("%s Boxplot_%s",plotData.Name,plotOptions.Property), 'Interpreter', 'none');
-                        
-                        for i = 1:loopLimit
-                            ax = nexttile(t_boxplot);
-                            
-                            dataA_r2 = squeeze(data_r(:,i,:,:));
-                            fprintf("%s",string(labels(i)));
-                            [all_sampled_data] = Bootstrap_distribution(dataA_r2,plotOptions.Bootstrap, plotOptions.Split);
-                            
-                            titleStr = sprintf('%s',string(labels(i)));
-                            
-                            sampled_data = reshape(all_sampled_data,size(all_sampled_data,1),[]);
-                            average_data = zscore(obj.MeanArray(dataA_r2,1));
-                            plotBoxPlot(ax,sampled_data,average_data,'Title',titleStr,'YLabel',plotOptions.Property,'Labels',obj.HDRNum_30);
-                        end
-                        
-                    case "HMS"
-                        [~,MatNum,ShapeNum,~,~] = size(data);
-                        tiledlayout(2,3,'TileSpacing', 'compact', 'Padding', 'compact');
-                        sgtitle(sprintf("%s Boxplot_%s",plotData.Name,plotOptions.Property), 'Interpreter', 'none');
-                        
-                        for shape = 1:ShapeNum
-                            nexttile;
-                            
-                            data_r = squeeze(data(:,mat_idx,shape,:,:));
-                            fprintf("mat:%s, shape:%s",string(obj.MatNames1(mat_idx)),string(obj.ShapeNames(shape)));
-                            [all_sampled_data] = Bootstrap_distribution(data_r,plotOptions.Bootstrap, plotOptions.Split);
-                            
-                            titleStr = sprintf('%s',string(obj.ShapeNames(shape)));
-                            sampled_data = reshape(all_sampled_data,size(all_sampled_data,1),[]);
-                            average_data = zscore(obj.MeanArray(data_r,1));
-                            plotBoxPlot(sampled_data,average_data,'Title',titleStr);
-                        end
-                end
-                
-                % ファイル名の決定と保存
-                filename_suffix = plotOptions.Mode;
-                if plotOptions.Mode == "HMS"
-                    filename_suffix = plotOptions.Mode + string(obj.MatNames3(mat_idx));
-                end
-                plotFileNameA = sprintf('%s_%s_%s_Significance_Boxplot.jpg',plotData.Name, plotOptions.Property, filename_suffix);
-                plotFullPathA = fullfile(obj.ResultDir, plotFileNameA);
-                saveas(boxplot, plotFullPathA);
-                
-                fprintf('  -> 散布図を保存しました\n');
-
-            catch ME
-                rethrow(ME);
-            end
-        end
-        
-        %% --- プロット1: 95%信頼区間の描画 ---
-        function plotConfidenceIntervals(obj, means, stds, num_trials)
-            % 1.pngを再現: 平均値と95%信頼区間をプロット
-
-            ax = gca; % nexttileで作成された現在のAxesを使用
-            se = stds / sqrt(num_trials);
-            ci_half_width = 1.96 * se;
-
-            errorbar(ax, 1:numel(means), means, ci_half_width, 'o-', 'LineWidth', 1.5, 'CapSize', 10);
-
-            grid(ax, 'on');
-            title(ax, '各点の平均と95%信頼区間');
-            xlabel(ax, '点のID');
-            ylabel(ax, 'サンプル平均');
-            axis(ax, 'tight');
+            ax_scatter2 = nexttile(figList.scatter2);
+            obj.plotSampleScatter(ax_scatter2,resampled_data_2);
         end
 
         %% --- プロット2: 相関係数分布のヒストグラム描画 ---
-        function plotCorrelationDistribution(obj, corr_coeffs)
+        function plotCorrelationDistribution(obj,ax, corrs, plotOptions)
             % 2.pngを再現: ブートストラップで得られた相関係数の分布をプロット
+            arguments
+                obj
+                ax
+                corrs
+                plotOptions.Title = ""
+            end
 
-            ax = gca;
-            histogram(ax, corr_coeffs, 'NumBins', 30, 'FaceColor', [0.3, 0.7, 0.9], 'EdgeColor', 'k');
+            histogram(ax, corrs, 'NumBins', 30, 'FaceColor', [0.3, 0.7, 0.9], 'EdgeColor', 'k');
 
             grid(ax, 'on');
-            title(ax, 'Distribution of Bootstrap Correlation Coefficients');
-            xlabel(ax, 'Correlation Coefficient');
-            ylabel(ax, 'Frequency');
+            title(ax, plotOptions.Title,'Interpreter', 'none');
+            xlabel(ax, 'Correlation Coefficient','Interpreter', 'none');
+            ylabel(ax, 'Frequency','Interpreter', 'none');
         end
 
         %% --- プロット3: 2セットのデータの散布図描画 ---
-        function plotSampleScatter(obj, data_A, data_B)
+        function plotSampleScatter(obj,ax, plotData, plotOptions)
             % 3.pngを再現: 2つのデータセットの平均値間の散布図をプロット
+            arguments
+                obj
+                ax
+                plotData 
+                plotOptions.Title  = ""
+            end
+            
+            a1_data = squeeze(plotData(:,1,:));
+            a2_data = squeeze(plotData(:,2,:));
+            
+            [num_rows, num_cols] = size(a1_data);
+            
+            random_col_indices_1 = randi(num_cols, num_rows, 1);
+            random_col_indices_2 = randi(num_cols, num_rows, 1);
+            
+            row_indices = (1:num_rows)'; % 行番号は1, 2, ..., 30
+            linear_indices_1 = sub2ind(size(a1_data), row_indices, random_col_indices_1);
+            linear_indices_2 = sub2ind(size(a2_data), row_indices, random_col_indices_2);
 
-            ax = gca;
-            x_data = mean(data_A, 1);
-            y_data = mean(data_B, 1);
-
-            scatter(ax, x_data, y_data, 50, 'o', 'MarkerEdgeColor', 'k');
+            % 5. 線形インデックスを使って、一気にデータを抽出
+            new_data_1 = a1_data(linear_indices_1);
+            new_data_2 = a2_data(linear_indices_2);
+            
+            scatter(ax, new_data_1, new_data_2, 50, 'o', 'MarkerEdgeColor', 'k');
 
             grid(ax, 'on');
-            title(ax, 'リサンプリングデータ1 vs データ2');
-            xlabel(ax, 'データセットAのサンプル平均');
-            ylabel(ax, 'データセットBのサンプル平均');
-            axis(ax, 'equal'); % 縦横のスケールを合わせる
+            title(ax, plotOptions.Title);
+            xlabel(ax, 'データセットAのサンプル');
+            ylabel(ax, 'データセットBのサンプル');
+            axis(ax, 'equal'); 
         end
 
         %% vs model

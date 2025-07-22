@@ -21,7 +21,7 @@ arguments
     ax (1,1) matlab.graphics.axis.Axes
     box_data (:,:) {mustBeNumeric, mustBeReal}
     scatter_data (:,1) {mustBeNumeric, mustBeReal}
-    options.Title (1,1) string = "Scatter Plot with Box Plot Overlay"
+    options.Title (1,1) string = ""
     options.XLabel (1,1) string = "Sorted Condition Index"
     options.YLabel (1,1) string = "Value"
     options.Amp    (1,1) double = 1.0
@@ -63,7 +63,7 @@ xlim(ax, [0, numel(sorted_scatter_values) + 1]);
 x_ticklabels = options.Labels(sort_indices);
 xticklabels(x_ticklabels);
 xtickangle(90);
-set(ax,'FontSize',6 * options.Amp);
+set(ax,'FontSize',5 * options.Amp);
 
 grid(ax, 'on');
 hold(ax, 'off');
