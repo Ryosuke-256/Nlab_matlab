@@ -65,14 +65,26 @@ end
 %% HMSP
 RowHMSP = mean(RowHMSPT,5);
 %zscore化
-ZsHMSP = mean(ZsHMSPT,5);
+ZsHMSP = zeros(size(RowHMSP));
+for participant = 1:size(RowHMSP,4)
+    for shape = 1:size(RowHMSP,3)
+        for material = 1:size(RowHMSP,2)
+            ZsHMSP(:, material,shape,participant) = zscore(RowHMSP(:,material,shape,participant));
+        end
+    end
+end
 
 %---------------------------------------
 % (HDR,Material,Shape)
 %---------------------------------------
 RowHMS = mean(RowHMSP,4);
 %zscore化
-ZsHMS = mean(ZsHMSP,4);
+ZsHMS = zeros(size(RowHMS));
+for shape = 1:size(RowHMS,3)
+    for material = 1:size(RowHMS,2)
+        ZsHMS(:, material,shape) = zscore(RowHMS(:,material,shape));
+    end
+end
 
 % 標準誤差
 error_ZsHMS = std(RowHMSP, 0, 4) / sqrt(size(RowHMSP, 4));
@@ -94,7 +106,10 @@ end
 %---------------------------------------
 RowHM = mean(RowHMS,3);
 %zscore化
-ZsHM = mean(ZsHMS,3);
+ZsHM = zeros(size(RowHM));
+for material = 1:size(RowHM,2)
+    ZsHM(:, material) = zscore(RowHM(:,material));
+end
 
 % 標準誤差
 RowHM_reshaped = reshape(RowHMSP,size(RowHMSP,1),size(RowHMSP,2),[]);
@@ -114,7 +129,10 @@ end
 %---------------------------------------
 RowHS = mean(permute(RowHMS,[1,3,2]),3);
 %zscore化
-ZsHS = mean(permute(ZsHMS,[1,3,2]),3);
+ZsHS = zeros(size(RowHS));
+for shape = 1:size(RowHS,2)
+    ZsHS(:, shape) = zscore(RowHS(:,shape));
+end
 
 % 標準誤差
 RowHMSP_per = permute(RowHMSP,[1,3,2,4]);
@@ -135,7 +153,8 @@ end
 %---------------------------------------
 RowH = mean(RowHM,2);
 %zscore化
-ZsH = mean(ZsHM,2);
+ZsH = zeros(size(RowH));
+ZsH(:) = zscore(RowH(:));
 
 % 標準誤差
 H_reshaped = reshape(RowHMSP,size(RowHMSP,1),[]);
@@ -184,7 +203,7 @@ error_H15 = std(Row15bnyHMP_reshape,0,3)/sqrt(size(Row15bnyHMP,3)+size(Row15bnyH
 
 % data save
 Results = struct(...
-    'RowHMSPT', RowHMSPT, 'ZsHMSPT',ZsHMSPT,...
+    'RowHMSPT', RowHMSPT, ...
     'RowHMS',RowHMS,'ZsHMS', ZsHMS, 'error_ZsHMS', error_ZsHMS, ...
     'RowHM',RowHM,'ZsHM', ZsHM, 'error_ZsHM', error_ZsHM, ...
     'RowHS',RowHS,'ZsHS', ZsHS, 'error_ZsHS', error_ZsHS, ...

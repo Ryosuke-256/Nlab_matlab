@@ -550,7 +550,7 @@ classdef DataAnalyzer < handle
                         dataA_r = squeeze(mean(mean(dataA,3),2));
                         dataB_r = squeeze(mean(mean(dataB,3),2));
                         
-                        [ceiling_distAA,ceiling_distAB,p_value,observed_corr,all_sampled_dataA,all_sampled_dataB] = Corr_Significance_v2(dataA_r, dataB_r, plotOptions.Bootstrap, plotOptions.Split);
+                        [ceiling_distAA,ceiling_distAB,p_value,observed_corr,all_sampled_dataA,all_sampled_dataB] = Corr_Significance_v3(dataA, dataB, plotOptions.Bootstrap, plotOptions.Split);
                         
                         % sgtitle
                         sgTitle = sprintf("%s - %s- all condition",plotDataA.Name,plotOptions.Property);
@@ -562,16 +562,17 @@ classdef DataAnalyzer < handle
                         
                         %% ---plot innner correlation coefficient ---
                         t_boxplot = tiledlayout(fig_boxplotA,1,1, 'Padding', 'normal');
-                        figListA.boxplot = t_boxplot;
                         t_frequency = tiledlayout(fig_frequencyA,1,1, 'Padding', 'normal');
-                        figListA.frequency = t_frequency;
                         t_scatter = tiledlayout(fig_scatterA,1,1, 'Padding', 'normal');
-                        figListA.scatter = t_scatter;
                         t_scatter2 = tiledlayout(fig_scatter2A,1,1, 'Padding', 'normal');
+                        
+                        figListA.boxplot = t_boxplot;
+                        figListA.frequency = t_frequency;
+                        figListA.scatter = t_scatter;
                         figListA.scatter2 = t_scatter2;                      
                         
                         % data
-                        plotDataA_r.Original = dataA_r;
+                        plotDataA_r.Original = dataA;
                         plotDataA_r.Name = plotDataA.Name;
                         plotDataA_r.Resampled = all_sampled_dataA;
                         plotDataA_r.Corr = ceiling_distAA;
@@ -589,8 +590,13 @@ classdef DataAnalyzer < handle
 
                     case {"HM", "HS"}
                         if plotOptions.Mode == "HS"
+                            %{
                             dataA_r = squeeze(mean(dataA,2));
                             dataB_r = squeeze(mean(dataB,2));
+                            %}
+                            dataA_r = permute(dataA,[1,3,2,4,5]);
+                            dataB_r = permute(dataB,[1,3,2,4,5]);
+                            
                             labels = obj.ShapeNames;
                             % sgtitle
                             sgTitle = sprintf("%s - %s- shape",plotDataA.Name,plotOptions.Property);
@@ -600,8 +606,13 @@ classdef DataAnalyzer < handle
                             t_scatter = tiledlayout(fig_scatterA,2,3, 'TileSpacing', 'compact', 'Padding', 'compact');
                             t_scatter2 = tiledlayout(fig_scatter2A,2,3, 'TileSpacing', 'compact', 'Padding', 'compact'); 
                         else % HMモード
+                            %{
                             dataA_r = squeeze(mean(dataA,3));
                             dataB_r = squeeze(mean(dataB,3));
+                            %}
+                            dataA_r = dataA;
+                            dataB_r = dataB;
+                            
                             labels = obj.MatNames3;
                             % sgtitle
                             sgTitle = sprintf("%s - %s- material",plotDataA.Name,plotOptions.Property);
@@ -623,12 +634,12 @@ classdef DataAnalyzer < handle
                         
                         loopLimit = size(dataA_r, 2);                        
                         for i = 1:loopLimit
-                            dataA_r2 = squeeze(dataA_r(:,i,:,:));
-                            dataB_r2 = squeeze(dataB_r(:,i,:,:));
+                            dataA_r2 = squeeze(dataA_r(:,i,:,:,:));
+                            dataB_r2 = squeeze(dataB_r(:,i,:,:,:));
                             fprintf("%s",string(labels(i)));
                             
                             % calculate bootstrap
-                            [ceiling_distAA,ceiling_distAB,p_value,observed_corr,all_sampled_dataA,all_sampled_dataB] = Corr_Significance_v2(dataA_r2, dataB_r2, plotOptions.Bootstrap, plotOptions.Split);
+                            [ceiling_distAA,ceiling_distAB,p_value,observed_corr,all_sampled_dataA,all_sampled_dataB] = Corr_Significance_v3(dataA_r2, dataB_r2, plotOptions.Bootstrap, plotOptions.Split);
                             
                             % ---plot significance hist ---
                             Graph_Significance(ax_significance,observed_corr, ceiling_distAA,ceiling_distAB, p_value, i,'Amp',plotOptions.Amp,'Title',sgTitle);
@@ -679,7 +690,7 @@ classdef DataAnalyzer < handle
                             fprintf("mat:%s, shape:%s",string(obj.MatNames1(mat_idx)),string(obj.ShapeNames(shape)));
 
                             % calculate bootstrap
-                            [ceiling_distAA,ceiling_distAB,p_value,observed_corr,all_sampled_dataA,all_sampled_dataB] = Corr_Significance_v2(dataA_r, dataB_r, plotOptions.Bootstrap, plotOptions.Split);
+                            [ceiling_distAA,ceiling_distAB,p_value,observed_corr,all_sampled_dataA,all_sampled_dataB] = Corr_Significance_v3(dataA_r, dataB_r, plotOptions.Bootstrap, plotOptions.Split);
 
                             % ---plot significance hist ---
                             titlestr = sprintf("%s - %s",plotOptions.Title,string(obj.MatNames3(mat_idx)));
