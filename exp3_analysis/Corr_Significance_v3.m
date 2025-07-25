@@ -56,14 +56,18 @@ function [ceiling_distAA, ceiling_distAB, p_value, observed_corr, all_sampled_da
         resampled_by_subj_A = resampleDimension(dataA, subject_dim_A);
         resampled_by_subj_B = resampleDimension(dataB, subject_dim_B);
         
+        num_slice = 5;
+        resampled_by_subj_A2 = extractSlices(resampled_by_subj_A,subject_dim_A,num_slice);
+        resampled_by_subj_B2 = extractSlices(resampled_by_subj_B,subject_dim_B,num_slice);
+        
         split_half_corrs_AA = zeros(num_splits, 1);
         split_half_corrs_AB = zeros(num_splits, 1);
 
         % --- 応答（試行）リサンプリング ---
         for j = 1:num_splits
             % 試行リサンプリングとパターンベクトル生成をヘルパー関数で実行
-            [pattern1_A, pattern2_A] = createPatternVectors(resampled_by_subj_A, trial_dim_A);
-            [pattern1_B, pattern2_B] = createPatternVectors(resampled_by_subj_B, trial_dim_A);
+            [pattern1_A, pattern2_A] = createPatternVectors(resampled_by_subj_A2, trial_dim_A);
+            [pattern1_B, pattern2_B] = createPatternVectors(resampled_by_subj_B2, trial_dim_A);
             
             split_half_corrs_AA(j) = corr(pattern1_A, pattern2_A);
             split_half_corrs_AB(j) = corr(pattern1_A, pattern1_B);
@@ -134,4 +138,27 @@ function resampled_data = resampleDimension(data, dim_to_resample)
     % N次元インデックスを線形インデックスに変換し、一気にデータを抽出
     linear_indices = sub2ind(data_size, indices_cell{:});
     resampled_data = data(linear_indices);
+end
+
+function extracted_data = extractSlices(data, dim, num_to_extract)
+    % 配列の特定の次元から指定した数だけ要素を抽出する関数
+
+    if num_to_extract > size(data, dim)
+        error('抽出したい数 (%d) が、指定された次元 (%d) の大きさ (%d) を超えています。', ...
+              num_to_extract, dim, size(data, dim));
+    end
+    total_slices = size(data, dim);
+
+    % 動的なインデックスの作成
+    num_dims = ndims(data);
+    idx = repmat({':'}, 1, num_dims);
+
+    % 1から次元の大きさまでの整数から、重複なしでランダムにインデックスを抽出
+    selected_indices = randperm(total_slices, num_to_extract);
+
+    % 抽出対象の次元のインデックスを、ランダムなインデックスで上書き
+    idx{dim} = selected_indices;
+
+    % インデックスを使ってデータを抽出
+    extracted_data = data(idx{:});
 end

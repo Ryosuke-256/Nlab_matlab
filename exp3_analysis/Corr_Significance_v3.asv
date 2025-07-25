@@ -1,5 +1,18 @@
 function [ceiling_distAA, ceiling_distAB, p_value, observed_corr, all_sampled_dataA, all_sampled_dataB] = Corr_Significance_v3(dataA, dataB, num_bootstrap, num_splits)
-    % N次元データに対応した、相関係数のノイズ天井を計算する一般化バージョン
+    %{
+    ○入力
+    ・dataA:[照明条件,~~~,被験者,試行回数]のデータ
+    ・dataB:dataAと同じ形状
+    ・num_bootstrap:bootstrapの回数 (被験者リサンプリングの回数)
+    ・num_splits:応答リサンプリングの回数
+    ○出力
+    ・ceiling_distAA:dataAの内部相関の記録
+    ・ceiling_distAB:dataAとdataBの相関係数の記録
+    ・p_value:ノイズ天井法のp値
+    ・observed:dataAとdataBの生データの相関係数
+    ・all_sampled_dataA:dataAのリサンプリングで得られた値の記録
+    ・all_sampled_dataB:dataBのリサンプリングで得られた値の記録
+    %}
     
     %% 1. 引数と設定
     arguments
@@ -43,6 +56,8 @@ function [ceiling_distAA, ceiling_distAB, p_value, observed_corr, all_sampled_da
         resampled_by_subj_A = resampleDimension(dataA, subject_dim_A);
         resampled_by_subj_B = resampleDimension(dataB, subject_dim_B);
         
+        resampled_by_subj_A2 = extractSlices(resampled_by_subj_A,
+        
         split_half_corrs_AA = zeros(num_splits, 1);
         split_half_corrs_AB = zeros(num_splits, 1);
 
@@ -60,7 +75,7 @@ function [ceiling_distAA, ceiling_distAB, p_value, observed_corr, all_sampled_da
             all_sampled_dataA(:, i, j, 2) = pattern2_A;
             all_sampled_dataB(:, i, j, 1) = pattern1_B;
             all_sampled_dataB(:, i, j, 2) = pattern2_B;
-        end
+        end  
         
         ceiling_distAA(i) = mean(split_half_corrs_AA);
         ceiling_distAB(i) = mean(split_half_corrs_AB);
@@ -86,7 +101,7 @@ end
 %% ========== ヘルパー関数群 ==========
 
 function [vector1, vector2] = createPatternVectors(data, trial_dim)
-    % データを受け取り、試行リサンプリングを2回行い、2つのパターンベクトルを生成する
+    % データを受け取り、応答リサンプリングを2回行い、2つのパターンベクトルを生成する
     
     % 1回目の試行リサンプリング
     resampled_data1 = resampleDimension(data, trial_dim);
@@ -121,4 +136,26 @@ function resampled_data = resampleDimension(data, dim_to_resample)
     % N次元インデックスを線形インデックスに変換し、一気にデータを抽出
     linear_indices = sub2ind(data_size, indices_cell{:});
     resampled_data = data(linear_indices);
+end
+
+function extracted_data = extractSlices(data, dim, num_to_extract)
+% 抽出数が、その次元の大きさより大きい場合はエラー
+if num_to_extract > size(data, dim)
+    error('抽出したい数 (%d) が、指定された次元 (%d) の大きさ (%d) を超えています。', ...
+          num_to_extract, dim, size(data, dim));
+end
+
+% 動的なインデックスの作成
+num_dims = ndims(data);
+idx = repmat({':'}, 1, num_dims);
+
+% 1から次元の大きさまでの整数から、重複なしでランダムにインデックスを抽出
+selected_indices = randperm(total_slices, num_to_extract);
+
+% 抽出対象の次元のインデックスを、ランダムなインデックスで上書き
+idx{dim} = selected_indices;
+
+% インデックスを使ってデータを抽出
+extracted_data = data(idx{:});
+
 end

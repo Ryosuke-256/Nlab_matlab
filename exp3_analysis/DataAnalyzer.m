@@ -559,6 +559,9 @@ classdef DataAnalyzer < handle
                         t_significance = tiledlayout(fig_significance,1,1, 'Padding', 'normal');
                         ax_significance = nexttile(t_significance);
                         Graph_Significance(ax_significance,observed_corr, ceiling_distAA,ceiling_distAB, p_value,'Amp',plotOptions.Amp,'Title',sgTitle);
+                        y_Limits = ylim(ax_significance);
+                        x_Limits = xlim(ax_significance);
+                        text(ax_significance,x_Limits(1)*0.9,y_Limits(2)-0.05, '* : p < 0.05', 'FontSize', 10 * plotOptions.Amp);
                         
                         %% ---plot innner correlation coefficient ---
                         t_boxplot = tiledlayout(fig_boxplotA,1,1, 'Padding', 'normal');
@@ -643,6 +646,9 @@ classdef DataAnalyzer < handle
                             
                             % ---plot significance hist ---
                             Graph_Significance(ax_significance,observed_corr, ceiling_distAA,ceiling_distAB, p_value, i,'Amp',plotOptions.Amp,'Title',sgTitle);
+                            y_Limits = ylim(ax_significance);
+                            x_Limits = xlim(ax_significance);
+                            text(ax_significance,x_Limits(1)*0.9,y_Limits(2)-0.05, '* : p < 0.05', 'FontSize', 10 * plotOptions.Amp);
                             
                             % ---plot innner correlation coefficient ---
                             plotDataA_r.Original = dataA_r2;
@@ -696,7 +702,10 @@ classdef DataAnalyzer < handle
                             titlestr = sprintf("%s - %s",plotOptions.Title,string(obj.MatNames3(mat_idx)));
                             sgtitle(t_significance, titlestr, 'Interpreter', 'none');
                             Graph_Significance(ax_significance,observed_corr, ceiling_distAA,ceiling_distAB, p_value, shape,'Amp',plotOptions.Amp,'Title',sgTitle);
-
+                            y_Limits = ylim(ax_significance);
+                            x_Limits = xlim(ax_significance);
+                            text(ax_significance,x_Limits(1)*0.9,y_Limits(2)-0.05, '* : p < 0.05', 'FontSize', 10 * plotOptions.Amp);
+           
                             % ---plot innner correlation coefficient ---
                             plotDataA_r.Original = dataA_r;
                             plotDataA_r.Name = plotDataA.Name;
@@ -769,10 +778,11 @@ classdef DataAnalyzer < handle
             end
 
             % ---plot scatter ---
+            num_dims_A = ndims(plotData.Original);
             permuted_data = permute(plotData.Resampled,[1,4,2,3]);
             resampled_data_1 = reshape(permuted_data,size(permuted_data,1),[]);
             resampled_data_2 = reshape(permuted_data,size(permuted_data,1),size(permuted_data,2),[]);
-            average_data = zscore(obj.MeanArray(plotData.Original,1));
+            average_data = mean(zscore(plotData.Original, 0, 1), 2:num_dims_A);
             
             ax_boxplot = nexttile(figList.boxplot);
             plotBoxPlot(ax_boxplot,resampled_data_1,average_data,'YLabel',plotOptions.Property,'Labels',obj.HDRNum_30,'Amp',plotOptions.Amp,'Title',plotOptions.Title);
