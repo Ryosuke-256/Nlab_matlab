@@ -215,6 +215,49 @@ classdef DataAnalyzer < handle
             fprintf('プロットの作成が完了しました。\n');
         end
         
+        %% --ANOVA--
+        function ANOVA(obj,dataSpecA,dataSpecB,options)
+            % ■ 入力:
+            %   dataSpecA (struct): データセットAの仕様
+            %     - SetName:     DataSetsのキー名 (e.g., "Set-A")
+            %     - TargetData:  主データ名 (e.g., "ZsHM")
+            %
+            %   dataSpecB (struct): データセットBの仕様 (dataSpecAと同様)
+            %
+            %   options (名前/値ペア):
+            %     - "Property" (string): 解析対象のプロパティ名 (グラフタイトル用, e.g., "反射率")
+            %     - "Amp"      (double): 増幅係数 (デフォルト: 1.5)
+            %     - "Bootstrap"(double): Bootstrapの反復回数 (デフォルト: 10000)
+            %     - "Mode"     (double): 1:H、2:HM、3:HS、4:HMS
+            arguments
+                obj
+                dataSpecA (1,1) struct {mustHaveFields(dataSpecA, ["SetName", "TargetData"])}
+                dataSpecB (1,1) struct {mustHaveFields(dataSpecB, ["SetName", "TargetData"])}
+                % オプション引数 (名前/値ペア)
+                options.Property  (1,1) string = "GRI"
+                options.Amp       (1,1) double {mustBeNumeric} = 1.0
+                options.Mode (1,1) string {mustBeMember(options.Mode, ["H", "HM", "HS", "HMS"])} = "H"
+                options.FactorNames (1,:) string = []
+            end
+            
+            fprintf('ANOVAを実行中 (Mode: %s)...\n', options.Mode);
+
+            % --- 1. データの準備 ---
+            plotDataA.target = obj.getDataFromSet(dataSpecA.SetName, dataSpecA.TargetData);
+            plotDataB.target = obj.getDataFromSet(dataSpecB.SetName, dataSpecB.TargetData);
+
+            % --- 2. 描画オプションを構造体にまとめる ---
+            plotOptions = options;
+            plotOptions.Title = sprintf('%s vs %s about %s', dataSpecA.SetName, dataSpecB.SetName, plotOptions.Property);
+            plotDataA.Name = dataSpecA.SetName;
+            plotDataB.Name = dataSpecB.SetName;
+
+            % --- 3. 統合された単一のヘルパー関数を呼び出す ---
+            obj.generateANOVAPlot(plotDataA,plotDataB, plotOptions);
+
+            fprintf('ANOVAが完了しました。\n');
+        end
+        
         %% 相関係数のノイズ天井検定のBootstrap        
         function plotCorrBootstrap(obj, dataSpecA, dataSpecB, options)
             % ■ 入力:
@@ -406,6 +449,28 @@ classdef DataAnalyzer < handle
             data = dataSet.(dataName);
         end
 
+        % 配列の特定の次元から指定した数だけ要素を抽出する関数
+        function extracted_data = extractSlices(obj,data, dim, num_to_extract)
+            if num_to_extract > size(data, dim)
+                error('抽出したい数 (%d) が、指定された次元 (%d) の大きさ (%d) を超えています。', ...
+                      num_to_extract, dim, size(data, dim));
+            end
+            total_slices = size(data, dim);
+
+            % 動的なインデックスの作成
+            num_dims = ndims(data);
+            idx = repmat({':'}, 1, num_dims);
+
+            % 1から次元の大きさまでの整数から、重複なしでランダムにインデックスを抽出
+            selected_indices = randperm(total_slices, num_to_extract);
+
+            % 抽出対象の次元のインデックスを、ランダムなインデックスで上書き
+            idx{dim} = selected_indices;
+
+            % インデックスを使ってデータを抽出
+            extracted_data = data(idx{:});
+        end
+        
         %% --- 散布図  ---
         function generateScatterPlot(obj, plotData, plotOptions)
             % HMSモードはFigureを複数作成するため、特別に処理
@@ -502,6 +567,68 @@ classdef DataAnalyzer < handle
                 rethrow(ME);
             end
             close(fig);
+        end
+        
+        %% ANOVA
+        function generateANOVAPlot(obj,plotDataA,plotDataB,plotOptions)
+            
+            dataA = plotDataA.target;
+            dataB = plotDataB.target;
+            
+            %{
+            % for debug
+            dataA = obj.extractSlices(obj.extractSlices(plotDataA.target,4,2),5,2);
+            dataB = obj.extractSlices(obj.extractSlices(plotDataB.target,4,2),5,2);
+            %}
+            
+            dataA_Zs = zscore(dataA, 0, 1);
+            dataB_Zs = zscore(dataB, 0, 1);
+            
+            [p_values, anova_table] = performMultiwayAnova(dataA_Zs, dataB_Zs,"FactorNames", plotOptions.FactorNames);
+            
+            csv_file_name = sprintf('%svs%s_%s_Anova.csv',plotDataA.Name,plotDataB.Name, plotOptions.Property);
+            csv_file_path = fullfile(obj.ResultDir, csv_file_name);
+            writecell(anova_table, csv_file_path);
+            fprintf('ANOVA表をCSVに保存しました: %s\n', csv_file_path);
+            
+            %{
+            image_file_name = sprintf('%svs%s_%s_Anova.jpg',plotDataA.Name,plotDataB.Name, plotOptions.Property);
+            image_file_path = fullfile(obj.ResultDir, image_file_name);
+            
+            saveAnovaResults(anova_table, csv_file_path, image_file_path)
+            %}
+            %{
+            switch plotOptions.Mode
+                case "H"
+                    [p_values, anova_table] = performMultiwayAnova(dataA, dataB, options);
+                    
+                case {"HM", "HS"}
+                    if plotOptions.Mode == "HS"
+                        dataA_r = permute(dataA,[1,3,2,4,5]);
+                        dataB_r = permute(dataB,[1,3,2,4,5]);
+
+                        labels = obj.ShapeNames;
+                    else % HMモード
+                        dataA_r = dataA;
+                        dataB_r = dataB;
+
+                        labels = obj.MatNames3;
+                    end
+                    [p_values, anova_table] = performMultiwayAnova(dataA, dataB, options);
+                    
+                    loopLimit = size(dataA_r, 2);                        
+                    for i = 1:loopLimit
+                        dataA_r2 = squeeze(dataA_r(:,i,:,:,:));
+                        dataB_r2 = squeeze(dataB_r(:,i,:,:,:));
+                        fprintf("%s",string(labels(i)));
+
+                        % calculate bootstrap
+                        [p_values, anova_table] = performMultiwayAnova(dataA_r2, dataB_r2, options);
+                    end
+                case "HMS"
+                    [p_values, anova_table] = performMultiwayAnova(dataA, dataB, options);
+            end
+            %}
         end
         
         %% Bootstrap

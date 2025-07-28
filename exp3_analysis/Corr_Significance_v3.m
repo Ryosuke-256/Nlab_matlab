@@ -56,9 +56,11 @@ function [ceiling_distAA, ceiling_distAB, p_value, observed_corr, all_sampled_da
         resampled_by_subj_A = resampleDimension(dataA, subject_dim_A);
         resampled_by_subj_B = resampleDimension(dataB, subject_dim_B);
         
+        % --------------- debug用 --------------
         num_slice = 5;
         resampled_by_subj_A2 = extractSlices(resampled_by_subj_A,subject_dim_A,num_slice);
         resampled_by_subj_B2 = extractSlices(resampled_by_subj_B,subject_dim_B,num_slice);
+        % -------------------------------------
         
         split_half_corrs_AA = zeros(num_splits, 1);
         split_half_corrs_AB = zeros(num_splits, 1);
