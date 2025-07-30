@@ -571,63 +571,31 @@ classdef DataAnalyzer < handle
         
         %% ANOVA
         function generateANOVAPlot(obj,plotDataA,plotDataB,plotOptions)
-            %{
+            
             dataA = plotDataA.target;
             dataB = plotDataB.target;
-            %}
+            
             %{
             % for debug
             dataA = obj.extractSlices(obj.extractSlices(plotDataA.target,4,2),5,2);
             dataB = obj.extractSlices(obj.extractSlices(plotDataB.target,4,2),5,2);
             %}
+            
             dataA_Zs = zscore(dataA, 0, 1);
             dataB_Zs = zscore(dataB, 0, 1);
             
-            [p_values, anova_table] = performMultiwayAnova(dataA_Zs, dataB_Zs,"FactorNames", plotOptions.FactorNames);
+            %[p_values, anova_table] = performMultiwayAnova(dataA_Zs, dataB_Zs,"FactorNames", plotOptions.FactorNames);
+            [ranova_table, rm_model] = performMixedAnova(dataA_Zs, dataB_Zs, "FactorNames", plotOptions.FactorNames,"BetweenFactorName", "VRMode");
             
-            csv_file_name = sprintf('%svs%s_%s_Anova.csv',plotDataA.Name,plotDataB.Name, plotOptions.Property);
+            rounded_table = roundTableValues(ranova_table,"NumDecimals",3);
+            disp(rounded_table);
+            
+            csv_file_name = sprintf('%svs%s_%s_ranova.csv',plotDataA.Name,plotDataB.Name, plotOptions.Property);
             csv_file_path = fullfile(obj.ResultDir, csv_file_name);
-            writecell(anova_table, csv_file_path);
+            
+            writetable(rounded_table(1:end,:),csv_file_path, 'WriteRowNames', true)
             fprintf('ANOVA表をCSVに保存しました: %s\n', csv_file_path);
             
-            %{
-            image_file_name = sprintf('%svs%s_%s_Anova.jpg',plotDataA.Name,plotDataB.Name, plotOptions.Property);
-            image_file_path = fullfile(obj.ResultDir, image_file_name);
-            
-            saveAnovaResults(anova_table, csv_file_path, image_file_path)
-            %}
-            %{
-            switch plotOptions.Mode
-                case "H"
-                    [p_values, anova_table] = performMultiwayAnova(dataA, dataB, options);
-                    
-                case {"HM", "HS"}
-                    if plotOptions.Mode == "HS"
-                        dataA_r = permute(dataA,[1,3,2,4,5]);
-                        dataB_r = permute(dataB,[1,3,2,4,5]);
-
-                        labels = obj.ShapeNames;
-                    else % HMモード
-                        dataA_r = dataA;
-                        dataB_r = dataB;
-
-                        labels = obj.MatNames3;
-                    end
-                    [p_values, anova_table] = performMultiwayAnova(dataA, dataB, options);
-                    
-                    loopLimit = size(dataA_r, 2);                        
-                    for i = 1:loopLimit
-                        dataA_r2 = squeeze(dataA_r(:,i,:,:,:));
-                        dataB_r2 = squeeze(dataB_r(:,i,:,:,:));
-                        fprintf("%s",string(labels(i)));
-
-                        % calculate bootstrap
-                        [p_values, anova_table] = performMultiwayAnova(dataA_r2, dataB_r2, options);
-                    end
-                case "HMS"
-                    [p_values, anova_table] = performMultiwayAnova(dataA, dataB, options);
-            end
-            %}
         end
         
         %% Bootstrap
