@@ -554,7 +554,7 @@ classdef DataAnalyzer < handle
             fig = figure('Visible', 'off');
             try
                 PlotHistgram_ver1(dataA(:), errA(:), dataB(:), errB(:), ...
-                                   'HDR', hdrData, 'Normalized z-score', titleStr, amp);
+                                   'HDR', hdrData, 'G', titleStr, amp);
 
                 % プロットの保存
                 grid on;
@@ -571,7 +571,6 @@ classdef DataAnalyzer < handle
         
         %% ANOVA
         function generateANOVAPlot(obj,plotDataA,plotDataB,plotOptions)
-            
             dataA = plotDataA.target;
             dataB = plotDataB.target;
             
@@ -581,11 +580,13 @@ classdef DataAnalyzer < handle
             dataB = obj.extractSlices(obj.extractSlices(plotDataB.target,4,2),5,2);
             %}
             
-            dataA_Zs = zscore(dataA, 0, 1);
-            dataB_Zs = zscore(dataB, 0, 1);
+            if plotOptions.Zs
+                dataA = zscore(dataA, 0, 1);
+                dataB = zscore(dataB, 0, 1); 
+            end
             
             %[p_values, anova_table] = performMultiwayAnova(dataA_Zs, dataB_Zs,"FactorNames", plotOptions.FactorNames);
-            [ranova_table, rm_model] = performMixedAnova(dataA_Zs, dataB_Zs, "FactorNames", plotOptions.FactorNames,"BetweenFactorName", "VRMode");
+            [ranova_table, rm_model] = performMixedAnova(dataA, dataB, "FactorNames", plotOptions.FactorNames,"BetweenFactorName", "VRMode");
             
             rounded_table = roundTableValues(ranova_table,"NumDecimals",3);
             disp(rounded_table);
@@ -687,10 +688,6 @@ classdef DataAnalyzer < handle
 
                     case {"HM", "HS"}
                         if plotOptions.Mode == "HS"
-                            %{
-                            dataA_r = squeeze(mean(dataA,2));
-                            dataB_r = squeeze(mean(dataB,2));
-                            %}
                             dataA_r = permute(dataA,[1,3,2,4,5]);
                             dataB_r = permute(dataB,[1,3,2,4,5]);
                             
@@ -703,10 +700,6 @@ classdef DataAnalyzer < handle
                             t_scatter = tiledlayout(fig_scatterA,2,3, 'TileSpacing', 'compact', 'Padding', 'compact');
                             t_scatter2 = tiledlayout(fig_scatter2A,2,3, 'TileSpacing', 'compact', 'Padding', 'compact'); 
                         else % HMモード
-                            %{
-                            dataA_r = squeeze(mean(dataA,3));
-                            dataB_r = squeeze(mean(dataB,3));
-                            %}
                             dataA_r = dataA;
                             dataB_r = dataB;
                             

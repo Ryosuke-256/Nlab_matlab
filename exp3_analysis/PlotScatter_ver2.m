@@ -28,7 +28,7 @@ function [outlier_indices] = PlotScatter_ver2(x, y, options)
     outlier_indices = [];
 
     % --- 5. メインの散布図を描画 ---
-    scatter(x, y, 20, 'b', 'filled', 'DisplayName', 'Data Points');
+    scatter(x, y, 15, 'b', 'filled', 'DisplayName', 'Data Points');
 
     % --- 6. 回帰直線の描画 ---
     if options.FitType == "linear"
