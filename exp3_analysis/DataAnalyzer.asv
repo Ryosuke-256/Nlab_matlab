@@ -237,7 +237,8 @@ classdef DataAnalyzer < handle
                 options.Property  (1,1) string = "GRI"
                 options.Amp       (1,1) double {mustBeNumeric} = 1.0
                 options.Mode (1,1) string {mustBeMember(options.Mode, ["H", "HM", "HS", "HMS"])} = "H"
-                options.FactorNames (1,:) string = []
+                options.InnerFactor (1,:) string = []
+                options.OuterFactor (1,:) string = ""
             end
             
             fprintf('ANOVAを実行中 (Mode: %s)...\n', options.Mode);
@@ -407,6 +408,38 @@ classdef DataAnalyzer < handle
             % --- 3. ヘルパー関数を呼び出してプロットと保存を実行 ---
             obj.generateResidualPlot(residuals, dataSpecA, dataSpecB, options);
         end
+        
+        %% 被験者ごとの差を見る
+        function SubjectTest(obj,dataSpecA,options)
+            % ■ 入力:
+            %   dataSpecA (struct): データセットAの仕様
+            %     - SetName:     DataSetsのキー名 (e.g., "Set-A")
+            %     - TargetData:  主データ名 (e.g., "ZsHM")
+            %
+            %   options (名前/値ペア):
+            %     - "Property" (string): 解析対象のプロパティ名 (グラフタイトル用, e.g., "反射率")
+            %     - "Amp"      (double): 増幅係数 (デフォルト: 1.5)
+            arguments
+                obj
+                dataSpecA (1,1) struct {mustHaveFields(dataSpecA, ["SetName", "TargetData"])}
+                % オプション引数 (名前/値ペア)
+                options.Property  (1,1) string = "GRI"
+                options.Amp       (1,1) double {mustBeNumeric} = 1.0
+            end
+
+            % --- 1. データの準備 ---
+            plotDataA.target = obj.getDataFromSet(dataSpecA.SetName, dataSpecA.TargetData);
+
+            % --- 2. 描画オプションを構造体にまとめる ---
+            plotOptions = options;
+            plotOptions.Title = sprintf('%s about %s', dataSpecA.SetName, plotOptions.Property);
+            plotDataA.Name = dataSpecA.SetName;
+
+            % --- 3. 統合された単一のヘルパー関数を呼び出す ---
+            obj.generateTestPlot(plotDataA, plotOptions);
+
+            fprintf('Testが完了しました。\n');
+        end
     end
     
     % --- 内部ヘルパーメソッド ---
@@ -470,6 +503,21 @@ classdef DataAnalyzer < handle
             % インデックスを使ってデータを抽出
             extracted_data = data(idx{:});
         end
+        
+        %% --- テスト  ---
+        function generateTestPlot(obj,plotDataA, plotOptions)
+            dataA = plotDataA.target;
+            plotFileName = sprintf('%s_%s_subjectTest1.jpg', plotDataA.Name, plotOptions.Property);
+            plotFullPath = fullfile(obj.ResultDir, plotFileName);            
+            plotSubjectTrialVariability(dataA,"SavePath",plotFullPath);
+            
+            plotFileName = sprintf('%s_%s_subjectTest2.jpg', plotDataA.Name, plotOptions.Property);
+            plotFullPath = fullfile(obj.ResultDir, plotFileName);
+            plotSpaghettiBySubject(dataA,1,"SavePath",plotFullPath);
+            
+            analyzeSubjectStats(dataA, 1, 6);
+        end
+        
         
         %% --- 散布図  ---
         function generateScatterPlot(obj, plotData, plotOptions)
@@ -554,7 +602,7 @@ classdef DataAnalyzer < handle
             fig = figure('Visible', 'off');
             try
                 PlotHistgram_ver1(dataA(:), errA(:), dataB(:), errB(:), ...
-                                   'HDR', hdrData, 'Normalized z-score', titleStr, amp);
+                                   'HDR', hdrData, 'G', titleStr, amp);
 
                 % プロットの保存
                 grid on;
@@ -571,7 +619,6 @@ classdef DataAnalyzer < handle
         
         %% ANOVA
         function generateANOVAPlot(obj,plotDataA,plotDataB,plotOptions)
-            
             dataA = plotDataA.target;
             dataB = plotDataB.target;
             
@@ -580,13 +627,9 @@ classdef DataAnalyzer < handle
             dataA = obj.extractSlices(obj.extractSlices(plotDataA.target,4,2),5,2);
             dataB = obj.extractSlices(obj.extractSlices(plotDataB.target,4,2),5,2);
             %}
-            if plotOptions.Zs
-                dataA = zscore(dataA, 0, 1);
-                dataB = zscore(dataB, 0, 1); 
-            end
             
             %[p_values, anova_table] = performMultiwayAnova(dataA_Zs, dataB_Zs,"FactorNames", plotOptions.FactorNames);
-            [ranova_table, rm_model] = performMixedAnova(dataA, dataB, "FactorNames", plotOptions.FactorNames,"BetweenFactorName", "VRMode");
+            [ranova_table, rm_model] = performMixedAnova(dataA, dataB, "FactorNames", plotOptions.InnerFactor,"BetweenFactorName", plotOptions.OuterFactor);
             
             rounded_table = roundTableValues(ranova_table,"NumDecimals",3);
             disp(rounded_table);
@@ -645,7 +688,7 @@ classdef DataAnalyzer < handle
                         dataA_r = squeeze(mean(mean(dataA,3),2));
                         dataB_r = squeeze(mean(mean(dataB,3),2));
                         
-                        [ceiling_distAA,ceiling_distAB,p_value,observed_corr,all_sampled_dataA,all_sampled_dataB] = Corr_Significance_v3(dataA, dataB, plotOptions.Bootstrap, plotOptions.Split);
+                        [ceiling_distAA,ceiling_distAB,p_value,observed_corr,bca_ci_AA,bca_ci_AB] = Corr_Significance_v4(dataA, dataB, plotOptions.Bootstrap, plotOptions.Split);
                         
                         % sgtitle
                         sgTitle = sprintf("%s - %s- all condition",plotDataA.Name,plotOptions.Property);
@@ -653,12 +696,14 @@ classdef DataAnalyzer < handle
                         % ---plot significance ---
                         t_significance = tiledlayout(fig_significance,1,1, 'Padding', 'normal');
                         ax_significance = nexttile(t_significance);
-                        Graph_Significance(ax_significance,observed_corr, ceiling_distAA,ceiling_distAB, p_value,'Amp',plotOptions.Amp,'Title',sgTitle);
+                        
+                        Graph_Significance_v2(ax_significance,observed_corr, ceiling_distAA,ceiling_distAB, p_value,bca_ci_AB,'Amp',plotOptions.Amp,'Title',sgTitle);
                         y_Limits = ylim(ax_significance);
                         x_Limits = xlim(ax_significance);
                         text(ax_significance,x_Limits(1)*0.9,y_Limits(2)-0.05, '* : p < 0.05', 'FontSize', 10 * plotOptions.Amp);
                         
                         %% ---plot innner correlation coefficient ---
+                        %{
                         t_boxplot = tiledlayout(fig_boxplotA,1,1, 'Padding', 'normal');
                         t_frequency = tiledlayout(fig_frequencyA,1,1, 'Padding', 'normal');
                         t_scatter = tiledlayout(fig_scatterA,1,1, 'Padding', 'normal');
@@ -685,6 +730,7 @@ classdef DataAnalyzer < handle
                         if plotOptions.Distribution
                             obj.plotBootstrapDistribution(figListA,plotDataA_r,plotOptions);
                         end
+                        %}
 
                     case {"HM", "HS"}
                         if plotOptions.Mode == "HS"
@@ -729,14 +775,17 @@ classdef DataAnalyzer < handle
                             fprintf("%s",string(labels(i)));
                             
                             % calculate bootstrap
-                            [ceiling_distAA,ceiling_distAB,p_value,observed_corr,all_sampled_dataA,all_sampled_dataB] = Corr_Significance_v3(dataA_r2, dataB_r2, plotOptions.Bootstrap, plotOptions.Split);
+                            %[ceiling_distAA,ceiling_distAB,p_value,observed_corr,all_sampled_dataA,all_sampled_dataB] = Corr_Significance_v3(dataA_r2, dataB_r2, plotOptions.Bootstrap, plotOptions.Split);
+                            [ceiling_distAA,ceiling_distAB,p_value,observed_corr,bca_ci_AA,bca_ci_AB] = Corr_Significance_v4(dataA_r2, dataB_r2, plotOptions.Bootstrap, plotOptions.Split);
                             
                             % ---plot significance hist ---
-                            Graph_Significance(ax_significance,observed_corr, ceiling_distAA,ceiling_distAB, p_value, i,'Amp',plotOptions.Amp,'Title',sgTitle);
+                            %Graph_Significance(ax_significance,observed_corr, ceiling_distAA,ceiling_distAB, p_value, i,'Amp',plotOptions.Amp,'Title',sgTitle);
+                            Graph_Significance_v2(ax_significance,observed_corr, ceiling_distAA,ceiling_distAB, p_value,ibca_ci_AB,'Amp',plotOptions.Amp,'Title',sgTitle);
                             y_Limits = ylim(ax_significance);
                             x_Limits = xlim(ax_significance);
                             text(ax_significance,x_Limits(1)*0.9,y_Limits(2)-0.05, '* : p < 0.05', 'FontSize', 10 * plotOptions.Amp);
                             
+                            %{
                             % ---plot innner correlation coefficient ---
                             plotDataA_r.Original = dataA_r2;
                             plotDataA_r.Name = plotDataA.Name;
@@ -753,6 +802,7 @@ classdef DataAnalyzer < handle
                             if plotOptions.Distribution
                                 obj.plotBootstrapDistribution(figListA,plotDataA_r,plotOptions);
                             end
+                            %}
                         end
                         
                         % --- finalization significance hist ---
