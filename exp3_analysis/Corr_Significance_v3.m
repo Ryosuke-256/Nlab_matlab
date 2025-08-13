@@ -40,8 +40,8 @@ function [ceiling_distAA, ceiling_distAB, p_value, observed_corr, all_sampled_da
     
     %% 3. 元データの相関係数（観測値）を計算
     % データをZスコア化し、全次元（照明条件以外）で平均をとってパターンベクトルを生成
-    pattern_vec_A = mean(zscore(dataA, 0, 1), 2:num_dims_A);
-    pattern_vec_B = mean(zscore(dataB, 0, 1), 2:num_dims_B);
+    pattern_vec_A = mean(dataA, 2:num_dims_A);
+    pattern_vec_B = mean(dataB, 2:num_dims_B);
     observed_corr = corr(pattern_vec_A, pattern_vec_B);
 
     %% 4. 結果保存用の変数を初期化
@@ -109,13 +109,13 @@ function [vector1, vector2] = createPatternVectors(data, trial_dim)
     
     % 1回目の試行リサンプリング
     resampled_data1 = resampleDimension(data, trial_dim);
-    % Zスコア化 -> 平均化
-    vector1 = mean(zscore(resampled_data1, 0, 1), 2:ndims(resampled_data1));
+    % 平均化
+    vector1 = mean(resampled_data1, 2:ndims(resampled_data1));
     
     % 2回目の試行リサンプリング
     resampled_data2 = resampleDimension(data, trial_dim);
-    % Zスコア化 -> 平均化
-    vector2 = mean(zscore(resampled_data2, 0, 1), 2:ndims(resampled_data2));
+    % 平均化
+    vector2 = mean(resampled_data2, 2:ndims(resampled_data2));
 end
 
 
