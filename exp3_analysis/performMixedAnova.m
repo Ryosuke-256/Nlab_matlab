@@ -29,7 +29,7 @@ arguments
     dataB {mustBeNumeric}
     options.FactorNames (1,:) string = []
     options.SubjectIDs (1,:) string = []
-    options.BetweenFactorName (1,1) string = "DataSource" 
+    options.BetweenFactorName (1,1) string = []
 end
 
 num_dims = ndims(dataA);
@@ -84,6 +84,7 @@ rm_model = fitrm(tbl, model_formula, 'WithinDesign', within_factors_table);
 within_model_formula = strjoin(within_factor_names, '*');
 ranova_table = ranova(rm_model, 'WithinModel', within_model_formula);
 fprintf('\n--- Repeated Measures ANOVA Table ---\n');
-%disp(ranova_table);
+
+disp(ranova_table);
 
 end

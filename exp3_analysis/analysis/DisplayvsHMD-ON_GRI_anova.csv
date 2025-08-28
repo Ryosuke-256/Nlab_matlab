@@ -1,0 +1,18 @@
+Source,Sum Sq.,d.f.,Singular?,Mean Sq.,F,Prob>F
+Illumination,35576.381,29,0,1226.772,1063.718,0
+Material,0,3,0,0,0,1
+Shape,0,5,0,0,0,1
+DisplayFactor,0,1,0,0,0,1
+Illumination*Material,2837.13,87,0,32.611,28.276,0
+Illumination*Shape,9328.737,145,0,64.336,55.785,0
+Illumination*DisplayFactor,5916.285,29,0,204.01,176.894,0
+Material*Shape,0,15,0,0,0,1
+Material*DisplayFactor,0,3,0,0,0,1
+Shape*DisplayFactor,0,5,0,0,0,1
+Illumination*Material*Shape,3569.362,435,0,8.205,7.115,0
+Illumination*Material*DisplayFactor,2082.885,87,0,23.941,20.759,0
+Illumination*Shape*DisplayFactor,6646.58,145,0,45.838,39.746,0
+Material*Shape*DisplayFactor,0,15,0,0,0,1
+Illumination*Material*Shape*DisplayFactor,2946.64,435,0,6.774,5.874,0
+Error,81375.883,70560,0,1.153,,
+Total,150975.883,71999,0,,,

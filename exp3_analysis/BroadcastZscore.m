@@ -28,7 +28,6 @@ if ~ismember(zscore_dim, common_dims)
 end
 
 %% 2. 参照データから統計量（移動量と倍率）を計算
-% zscore_dimに沿って平均値と標準偏差を計算
 mu_ref    = mean(reference_data, zscore_dim);
 sigma_ref = std(reference_data, 0, zscore_dim);
 
@@ -40,10 +39,8 @@ disp(sigma_ref);
 % 標準偏差が0の場合は、ゼロ除算を避けるために1に設定
 sigma_ref(sigma_ref == 0) = 1;
 
-%% 3. ★ 対象データに補正を適用 (ブロードキャスト)
-% MATLABのブロードキャスト機能により、mu_refとsigma_refがtarget_dataのサイズに自動的に拡張されて計算されます。
+%% 3. ★ 対象データに補正を適用
 corrected_data = (target_data - mu_ref) ./ sigma_ref;
 
 fprintf('Zscoreのブロードキャスト処理が完了しました。\n');
-
 end

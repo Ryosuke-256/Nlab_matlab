@@ -28,18 +28,15 @@ function [p_values, anova_table] = performMultiwayAnova(dataA, dataB, options)
 arguments
     dataA {mustBeNumeric}
     dataB {mustBeNumeric}
-    options.FactorNames (1,:) string = []
+    options.InnerFactor (1,:) string = []
+    options.OuterFactor (1,:) string = []
 end
 
-% 検証ロジックを、被験者数が異なっていても許容するように変更
-num_dims_A = ndims(dataA);
-num_dims_B = ndims(dataB);
-if num_dims_A ~= num_dims_B
-    error('2つの入力データの次元数が一致しません。');
-end
-num_dims = num_dims_A;
+FactorNames = [options.InnerFactor,options.OuterFactor];
+
+% 検証ロジック
+num_dims = ndims(dataA);
 if num_dims < 3, error('入力データは3次元以上である必要があります。'); end
-
 sizeA = size(dataA);
 sizeB = size(dataB);
 subject_dim = num_dims - 1;
@@ -53,12 +50,12 @@ end
 factor_dims = 1:(num_dims - 2);
 num_factors = numel(factor_dims) + 1; % データソース要因(+1)
 
-if ~isempty(options.FactorNames) && numel(options.FactorNames) ~= num_factors
-    error('FactorNamesの数(%d)が、実際の要因数(%d)と一致しません。', numel(options.FactorNames), num_factors);
+if ~isempty(FactorNames) && numel(FactorNames) ~= num_factors
+    error('FactorNamesの数(%d)が、実際の要因数(%d)と一致しません。', numel(FactorNames), num_factors);
 end
 
-%% 2. ★ データの「繰り返し」次元への変換 (個別)
-% 要因次元のサイズは共通
+
+%% 2. ★ データのサンプル次元への変換
 factor_sizes = sizeA(factor_dims);
 
 % データAの変形
@@ -69,11 +66,11 @@ dataA_reshaped = reshape(dataA, [prod(factor_sizes), num_reps_A]);
 num_reps_B = size(dataB, num_dims - 1) * size(dataB, num_dims);
 dataB_reshaped = reshape(dataB, [prod(factor_sizes), num_reps_B]);
 
+
 %% 3. anovan関数用のデータ形式に準備
 all_values = [dataA_reshaped(:); dataB_reshaped(:)];
 
-% ★修正点2: グループ変数をデータAとBで個別に作成してから結合
-% 要因のインデックスグリッドは共通
+% グループ変数をデータAとBで個別に作成してから結合
 grid_vectors = arrayfun(@(n) 1:n, factor_sizes, 'UniformOutput', false);
 grid_outputs = cell(1, numel(factor_sizes));
 [grid_outputs{:}] = ndgrid(grid_vectors{:});
@@ -81,9 +78,7 @@ grid_outputs = cell(1, numel(factor_sizes));
 groups = cell(1, num_factors);
 for i = 1:numel(factor_sizes)
     factor_group_base = grid_outputs{i}(:);
-    % データA用のグループ変数
     group_A_i = repmat(factor_group_base, num_reps_A, 1);
-    % データB用のグループ変数
     group_B_i = repmat(factor_group_base, num_reps_B, 1);
     % 結合
     groups{i} = [group_A_i; group_B_i];
@@ -95,6 +90,7 @@ groups{end} = [repmat("A", numel(dataA_reshaped), 1); repmat("B", numel(dataB_re
 %% 4. 多因子分散分析(N-way ANOVA)の実行
 [p_values, anova_table] = anovan(all_values, groups, ...
     'model', 'full', ...
-    'varnames', options.FactorNames, ...
+    'varnames', FactorNames, ...
     'display', 'on');
+
 end

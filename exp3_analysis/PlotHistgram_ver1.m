@@ -1,27 +1,50 @@
-function [] = PlotHistgram_ver1(array1,err_array1,array2,err_array2,x_label,x_ticklabels,y_label,graph_title,amp)
-    bar1 = array1;
-    err1 = err_array1;
-    bar2 = array2;
-    err2 = err_array2;
+function [] = PlotHistgram_ver1(plotDataA,plotDataB,options)
+    % --- 1. 引数の定義と検証 ---
+    arguments
+        plotDataA (1,1) struct {mustHaveFields(plotDataA, ["target", "error", "Name"])}
+        plotDataB (1,1) struct {mustHaveFields(plotDataB, ["target", "error", "Name"])}
+        
+        % オプション引数 (名前/値ペア)
+        options.HDRNo (:,:) double {mustBeVector} = []
+        options.XLabel (1,1) string = "X"
+        options.YLabel (1,1) string = "Y"
+        options.Title (1,1) string = "title"
+        options.Amp (1,1) double = 1
+    end
+
+    bar1 = plotDataA.target;
+    err1 = plotDataA.error;
+    name1 = plotDataA.Name;
+    bar2 = plotDataB.target;
+    err2 = plotDataB.error;
+    name2 = plotDataB.Name;
+    
     bar_width = 0.35;
-    x = 1:length(x_ticklabels);
+    x = 1:length(options.HDRNo);
 
     hold on;
-    bar_1 = bar(x + bar_width/2, bar1, bar_width, 'FaceColor', 'b', 'DisplayName', '3D'); 
+    bar_1 = bar(x + bar_width/2, bar1, bar_width, 'FaceColor', '#F8A088',  'DisplayName', sprintf("%s",name1)); 
     errorbar(x + bar_width/2, bar1, err1, 'k', 'linestyle', 'none');
-    bar_2 = bar(x - bar_width/2, bar2, bar_width, 'FaceColor', 'r', 'DisplayName', '3D'); 
+    bar_2 = bar(x - bar_width/2, bar2, bar_width, 'FaceColor', '#7F96C2', 'DisplayName', sprintf("%s",name2)); 
     errorbar(x - bar_width/2, bar2, err2, 'k', 'linestyle', 'none');
-    hold off;
 
-    ylim([-1.2 1.2]);
+    % range
+    ymax = max(max(bar1),max(bar2))*1.2;
+    ymin = min(min(bar1),min(bar2))*1.2;
+    ylim([ymin ymax]);
+    
     set(gca, 'XTick', x);
-    xticklabels(x_ticklabels);
+    xticklabels(options.HDRNo);
     xtickangle(90);
-    set(gca,'FontSize',6*amp);
+    set(gca,'FontSize',10*options.Amp);
 
-    xlabel(x_label,'FontSize',12*amp); 
-    ylabel(y_label,'FontSize',12*amp);
-    title(graph_title,'FontSize',12*amp);
-    legend([bar_1, bar_2], {'VR', '2D'}, 'Location', 'southeast','Orientation','vertical');
+    xlabel(options.XLabel,'FontSize',14*options.Amp); 
+    ylabel(options.YLabel,'FontSize',14*options.Amp);
+    title(options.Title,'FontSize',12*options.Amp);
+    legend([bar_1, bar_2], 'Location', 'southeast','Orientation','vertical');
     legend('boxoff');
+    
+    grid on;
+    box on;
+    hold off;
 end

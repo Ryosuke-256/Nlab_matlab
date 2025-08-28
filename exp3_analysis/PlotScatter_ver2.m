@@ -28,11 +28,12 @@ function [outlier_indices] = PlotScatter_ver2(x, y, options)
     outlier_indices = [];
 
     % --- 5. メインの散布図を描画 ---
-    scatter(x, y, 15, 'b', 'filled', 'DisplayName', 'Data Points');
+    Color_scatter = [28, 48, 199] / 255;
+    scatter(x, y, 15, Color_scatter , 'filled', 'DisplayName', 'Data Points');
 
     % --- 6. 回帰直線の描画 ---
     if options.FitType == "linear"
-        plot(mdl.Variables.x1, mdl.Fitted, 'r-', 'LineWidth', 1.5, 'DisplayName', 'Linear Fit');
+        plot(mdl.Variables.x1, mdl.Fitted, 'Color', '#D44843', 'LineStyle', '-','LineWidth', 1.5, 'DisplayName', 'Linear Fit');
     else
         ft_exp = fittype('a*exp(b*(x-c))+d');
         start_point = [max(y), 1, x(y==max(y)), min(y)];
@@ -70,7 +71,7 @@ function [outlier_indices] = PlotScatter_ver2(x, y, options)
     y_limits = ylim;
     common_limits = [min([x_limits, y_limits]), max([x_limits, y_limits])];
     
-    plot(common_limits, common_limits, 'g--', 'LineWidth', 1, 'DisplayName', 'y=x line');
+    plot(common_limits, common_limits, 'Color', '#81BD5F', 'LineStyle', '--','LineWidth', 1, 'DisplayName', 'y=x line');
     
     % HDR No
     for point = 1:length(x)
@@ -87,8 +88,8 @@ function [outlier_indices] = PlotScatter_ver2(x, y, options)
     set(gca,'FontSize',8 * options.Amp);
 
     % --- 9. 最後の仕上げ ---
-    xlabel(options.XLabel, 'FontSize', 12*options.Amp);
-    ylabel(options.YLabel, 'FontSize', 12*options.Amp);
+    xlabel(options.XLabel, 'FontSize', 12*options.Amp, 'Interpreter', 'none');
+    ylabel(options.YLabel, 'FontSize', 12*options.Amp, 'Interpreter', 'none');
     title(options.Title, 'FontSize', 12*options.Amp, 'Interpreter', 'none');
     grid on;
     box on;

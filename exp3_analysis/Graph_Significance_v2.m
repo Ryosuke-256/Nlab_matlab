@@ -31,7 +31,7 @@ fill(ax, [x_axis-0.5, x_axis+0.5, x_axis+0.5, x_axis-0.5], [ci_95(1), ci_95(1), 
 
 % 観測された相関係数を棒グラフで表示 (変更なし)
 bar_width = 0.4;
-bar(ax, x_axis, observed_corr, bar_width, 'FaceColor', 'b', 'DisplayName', 'Observed Corr');
+bar(ax, x_axis, observed_corr, bar_width, 'FaceColor', '#81BD5F', 'DisplayName', 'Observed Corr','EdgeColor', 'none');
 
 % ★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★
 % ★ 修正点: エラーバーの計算をBCa信頼区間ベースに変更
@@ -44,13 +44,13 @@ upperError = bca_ci_AB(2) - centerValue; % 上限 - 平均
 
 % 非対称エラーバーを描画
 errorbar(ax, x_axis, centerValue, lowerError, upperError, 'o', ...
-    'Color', 'k', 'LineWidth', 1.5, 'CapSize', 10, 'DisplayName', 'BCa 95% CI');
+    'Color', '#1C3077', 'LineWidth', 1.0 ,'CapSize', 10, 'DisplayName', 'BCa 95% CI');
 
 % (以降のテキスト描画、体裁調整は微調整のみ)
 graphtext1 = sprintf('%.2f', observed_corr);
-text(ax, x_axis, observed_corr, graphtext1, 'HorizontalAlignment','center', 'VerticalAlignment','bottom', 'FontSize', 10 * options.Amp);
+text(ax, x_axis-0.2, observed_corr, graphtext1, 'HorizontalAlignment','center', 'VerticalAlignment','bottom', 'FontSize', 10 * options.Amp);
 if p_value < 0.05
-    text(ax, x_axis, observed_corr + 0.02, '*', 'HorizontalAlignment','center', 'VerticalAlignment','bottom', 'FontSize', 12 * options.Amp, 'Color', 'r');
+    text(ax, x_axis, observed_corr + 0.02, '*', 'HorizontalAlignment','center', 'VerticalAlignment','bottom', 'FontSize', 12 * options.Amp, 'Color', '#D44843');
 end
 
 ylim(ax, [0.0, 1.1]);

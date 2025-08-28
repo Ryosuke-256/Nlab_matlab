@@ -54,6 +54,12 @@ GRI_HMS = makeGRI(Row_HMSPT,1,[4,5]);
 error_HMS = calculateSE(Row_HMSPT,[1,2,3],[4,5]);
 
 %---------------------------------------
+% (HDR,Material,Shape,Participants,Trial)
+%---------------------------------------
+
+GRI_HMSPT = BroadcastZscore(Row_HMS, Row_HMSPT, 1, [1,2,3]);
+
+%---------------------------------------
 % (HDR,Material)
 %---------------------------------------
 Row_HM = mean(Row_HMS,[3,4,5]);
@@ -110,7 +116,7 @@ error_H_15_bny = calculateSE(Row_HMPT_15_bny,[1],[2,3,4]);
 
 % data save
 Results = struct(...
-    'Row_HMSPT', Row_HMSPT, ...
+    'Row_HMSPT', Row_HMSPT,'GRI_HMSPT',GRI_HMSPT, ...
     'Row_HMS',Row_HMS,'GRI_HMS', GRI_HMS, 'error_HMS', error_HMS, ...
     'Row_HM',Row_HM,'GRI_HM', GRI_HM, 'error_HM', error_HM, ...
     'Row_HS',Row_HS,'GRI_HS', GRI_HS, 'error_HS', error_HS, ...
