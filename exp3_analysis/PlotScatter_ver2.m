@@ -82,14 +82,14 @@ function [outlier_indices] = PlotScatter_ver2(x, y, options)
     text_x = x_limits(1)+abs(x_limits(1)-x_limits(2))/15;
     text_y = y_limits(2)-abs(x_limits(1)-x_limits(2))/10;
     text(text_x, text_y, sprintf('r = %.2f\nR^2 = %.2f', r_value, R2), ...
-         'VerticalAlignment', 'top', 'FontSize', 8 * options.Amp, ...
+         'VerticalAlignment', 'top', 'FontSize', 9 * options.Amp, ...
          'BackgroundColor', 'w', 'EdgeColor', 'k');
      
     set(gca,'FontSize',8 * options.Amp);
 
     % --- 9. 最後の仕上げ ---
-    xlabel(options.XLabel, 'FontSize', 12*options.Amp, 'Interpreter', 'none');
-    ylabel(options.YLabel, 'FontSize', 12*options.Amp, 'Interpreter', 'none');
+    xlabel(options.XLabel, 'FontSize', 10*options.Amp, 'Interpreter', 'none');
+    ylabel(options.YLabel, 'FontSize', 10*options.Amp, 'Interpreter', 'none');
     title(options.Title, 'FontSize', 12*options.Amp, 'Interpreter', 'none');
     grid on;
     box on;

@@ -18,11 +18,16 @@ classdef DataAnalyzer < handle
         MatNames1 = {'cu0025', 'cu0129', 'pla0075', 'pla0225'};
         MatNames2 = {'cu_0.025', 'cu_0.129', 'pla_0.075', 'pla_0.225'};
         MatNames3 = {'cu-0.025', 'cu-0.129', 'pla-0.075', 'pla-0.225'};
+        MatNames5 = {'cu','pla'};
+        
         HDRNames_15 = [19, 39, 78, 80, 102, 125, 152, 203, 226, 227, 230, 232, 243, 278, 281];
         HDRNames_30 = [5,19,34,39,42,43,78,80,102,105,125,152,164,183,198,201,202,203,209,222,226,227,230,232,243,259,272,278,281,282];
         HDRNum_15 = [2,4,7,8,9,11,12,18,21,22,23,24,25,28,29];
         HDRNum_30 = [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30];
+        
         ShapeNames = {'sphere','bunny','dragon','boardA','boardB','boardC'};
+        ShapeNames5 = {'bunny','boardA','boardC'};
+        
         ParticipantsNames_Exp3 = {'Jiang','Nakajima','ODA','Satou','ishiguro','kawahara'},
     end
     
@@ -163,6 +168,35 @@ classdef DataAnalyzer < handle
             end
         end
 
+        %% ---Heatmap ---
+        function Heatmap(obj,dataSpecA,options)
+            arguments
+                obj
+                dataSpecA (1,1) struct {mustHaveFields(dataSpecA, ["SetName", "TargetData", "ErrorData"])}
+                options.Property (1,1) string = "GRI"
+                options.Amp      (1,1) double {mustBeNumeric} = 1.0
+                options.Mode     (1,1) string {mustBeMember(options.Mode, ["H", "HM", "HS", "HMS"])} = "H"
+            end
+            
+            fprintf('HeatMapの作成を開始します...\n');
+
+            % --- 1. データの準備 ---
+            % 描画に必要なデータを構造体にまとめる
+            plotDataA.target = obj.getDataFromSet(dataSpecA.SetName, dataSpecA.TargetData);
+            plotDataA.error  = obj.getDataFromSet(dataSpecA.SetName, dataSpecA.ErrorData);
+            plotDataA.Name = dataSpecA.SetName;
+
+            % 描画オプションを構造体にまとめる
+            plotOptions = options;
+            plotOptions.Title = sprintf('Heatmap - %s about %s', plotDataA.Name, plotOptions.Property);
+
+            % --- 2. 統合されたヘルパー関数を呼び出す ---
+            obj.generateHeatmap(plotDataA,plotOptions);
+
+            fprintf('プロットの作成が完了しました。\n');
+        end
+        
+        
         %% --- Histgram ---
         function HistgramCompare(obj, dataSpecA, dataSpecB, options)            
             % ■ 入力:
@@ -239,6 +273,8 @@ classdef DataAnalyzer < handle
                 options.PreDim   (1,1) double {mustBeNumeric} = 1
                 options.Mode     (1,1) string {mustBeMember(options.Mode, ["H", "HM", "HS", "HMS"])} = "H"
                 options.Residual (1,1) string {mustBeMember(options.Residual, ["regression", "outlier"])} = "regression"
+                options.MatNum (1,1) double {mustBeNumeric} = 4
+                options.ShapeNum (1,1) double {mustBeNumeric} = 6
             end
 
             fprintf('散布図の作成を開始します...\n');
@@ -256,6 +292,16 @@ classdef DataAnalyzer < handle
             plotOptions.NameA = dataSpecA.SetName;
             plotOptions.NameB = dataSpecB.SetName;
             plotOptions.Title = sprintf('%s vs %s about %s', plotOptions.NameA, plotOptions.NameB, plotOptions.Property);
+            if options.MatNum == 4
+                plotOptions.MatNames = obj.MatNames3;
+            elseif options.MatNum == 2
+                plotOptions.MatNames = obj.MatNames5;
+            end
+            if options.ShapeNum == 6
+                plotOptions.ShapeNames = obj.ShapeNames;
+            elseif options.ShapeNum == 3
+                plotOptions.ShapeNames = obj.ShapeNames5;
+            end
 
             % --- 2. 統合されたヘルパー関数を呼び出す ---
             obj.generateScatterPlot(plotData, plotOptions);
@@ -653,6 +699,36 @@ classdef DataAnalyzer < handle
             fprintf('  -> Histgramを保存しました\n');
 
         end
+        
+        %% ---Heatmap---
+        function generateHeatmap(obj,plotData,plotOptions)
+            fig_heatmap = figure('Visible', 'off');
+
+            % モードに応じてループ処理
+            switch plotOptions.Mode
+                case "H"
+                    fprintf('H,HMSは使えません');                    
+                case {"HM", "HS"}
+                    if plotOptions.Mode == "HM"
+                        labels = obj.MatNames3;
+                    else % "HS"
+                        labels = obj.ShapeNames;
+                    end
+                   
+                    createHeatmap(plotData,"Labels",labels,"Title",plotOptions.Title,"Amp",plotOptions.Amp);
+                 case "HMS"
+                    fprintf('H,HMSは使えません');   
+            end
+
+            % ファイル名の決定と保存
+            filename_suffix = plotOptions.Mode;
+            plotFileName = sprintf('Heatmap_%s_%s_%s.jpg', plotData.Name, plotOptions.Property, filename_suffix);
+            plotFullPath = fullfile(obj.ResultDir, plotFileName);
+            saveas(fig_heatmap, plotFullPath);
+            fprintf('  -> Heatmapを保存しました\n');
+
+        end
+        
         %% --- 散布図  ---
         function generateScatterPlot(obj, plotData, plotOptions)
             % HMSモードはFigureを複数作成するため、特別に処理
@@ -687,10 +763,10 @@ classdef DataAnalyzer < handle
                     case {"HM", "HS"}                        
                         if plotOptions.Mode == "HM"
                             tiledlayout(2,2,'TileSpacing', 'compact', 'Padding', 'compact');
-                            labels = obj.MatNames3;
+                            labels = plotOptions.MatNames;
                         else % "HS"
                             tiledlayout(2,3,'TileSpacing', 'compact', 'Padding', 'compact');
-                            labels = obj.ShapeNames;
+                            labels = plotOptions.ShapeNames;
                         end
                         
                         sgtitle(plotOptions.Title, 'Interpreter', 'none');
@@ -705,12 +781,12 @@ classdef DataAnalyzer < handle
                         end
                     case "HMS"
                         tiledlayout(2,3,'TileSpacing', 'compact', 'Padding', 'compact');
-                        titleStr = sprintf('%s-%s', plotOptions.Title,string(obj.MatNames3(mat_idx)));
+                        titleStr = sprintf('%s-%s', plotOptions.Title,string(plotOptions.MatNames(mat_idx)));
                         sgtitle(titleStr, 'Interpreter', 'none');
                         
                         for shape = 1:size(plotData.targetA, 3)
                             nexttile;
-                            titleStr = sprintf('%s',string(obj.ShapeNames(shape)));
+                            titleStr = sprintf('%s',string(plotOptions.ShapeNames(shape)));
                             
                             PlotScatter_ver2(plotData.targetA(:,mat_idx,shape), plotData.targetB(:,mat_idx,shape),...
                                 "XLabel",sprintf('%s-%s',plotOptions.NameA,plotOptions.Property),...
@@ -722,7 +798,7 @@ classdef DataAnalyzer < handle
                 % ファイル名の決定と保存
                 filename_suffix = plotOptions.Mode;
                 if plotOptions.Mode == "HMS"
-                    filename_suffix = "HMS_" + string(obj.MatNames3(mat_idx));
+                    filename_suffix = "HMS_" + string(plotOptions.MatNames(mat_idx));
                 end
                 plotFileName = sprintf('%svs%s_%s_%s_scatter.jpg', plotOptions.NameA, plotOptions.NameB, plotOptions.Property, filename_suffix);
                 plotFullPath = fullfile(obj.ResultDir, plotFileName);
