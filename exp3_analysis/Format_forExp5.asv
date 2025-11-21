@@ -1,0 +1,31 @@
+function Results = Format_forExp5(data)
+arguments
+    data struct
+end
+
+Mat_extract = [1,2];
+Shape_extract = [2,4,6];
+
+data.Row_HMSPT = data.Row_HMSPT(:,Mat_extract,Shape_extract,:,:);
+data.GRI_HMSPT = data.GRI_HMSPT(:,Mat_extract,Shape_extract,:,:);
+data.Row_HMS = data.Row_HMS(:,Mat_extract,Shape_extract);
+data.GRI_HMS = data.GRI_HMS(:,Mat_extract,Shape_extract);
+data.error_HMS = data.error_HMS(:,Mat_extract,Shape_extract);
+data.Row_HM = data.Row_HM(:,Mat_extract);
+data.GRI_HM = data.GRI_HM(:,Mat_extract);
+data.error_HM = data.error_HM(:,Mat_extract);
+data.Row_HS = data.Row_HS(:,Shape_extract);
+data.GRI_HS = data.GRI_HS(:,Shape_extract);
+data.error_HS = data.error_HS(:,Shape_extract);
+data.GRI_HM_15 = data.GRI_HM_15(:,Mat_extract);
+
+
+    'Row_HMSPT', Row_HMSPT, 'GRI_HMSPT',GRI_HMSPT,...
+    'Row_HMS',Row_HMS,'GRI_HMS', GRI_HMS, 'error_HMS', error_HMS, ...
+    'Row_HM',Row_HM,'GRI_HM', GRI_HM, 'error_HM', error_HM, ...
+    'Row_HS',Row_HS,'GRI_HS', GRI_HS, 'error_HS', error_HS, ...
+    'Row_H',Row_H,'GRI_H', GRI_H, 'error_H', error_H, ...
+    'GRI_HM_15', GRI_HM_15_bny, 'error_HM_15', error_HM_15_bny, ...
+    'GRI_H_15', GRI_H_15_bny, 'error_H_15', error_H_15_bny ...
+end
+

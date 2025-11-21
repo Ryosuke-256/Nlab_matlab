@@ -296,6 +296,7 @@ classdef DataAnalyzer < handle
                 plotOptions.MatNames = obj.MatNames3;
             elseif options.MatNum == 2
                 plotOptions.MatNames = obj.MatNames5;
+                if plotData.targetA
             end
             if options.ShapeNum == 6
                 plotOptions.ShapeNames = obj.ShapeNames;
