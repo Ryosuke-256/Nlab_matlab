@@ -105,7 +105,7 @@ classdef DataAnalyzer < handle
         end
         
         %% ---頻度ヒストグラム　---
-        function plotHistogram(obj, dataSpec, mode)
+        function plotFreqHistogram(obj, dataSpec, mode)
             % 入力:
                 % dataSpecA (struct): データセットAの仕様
                 %     - SetName:     DataSetsのキー名 (e.g., "Set-A")
@@ -176,8 +176,6 @@ classdef DataAnalyzer < handle
                 options.Property (1,1) string = "GRI"
                 options.Amp      (1,1) double {mustBeNumeric} = 1.0
                 options.Mode     (1,1) string {mustBeMember(options.Mode, ["H", "HM", "HS", "HMS"])} = "H"
-                options.MatNum (1,1) double {mustBeNumeric} = 4
-                options.ShapeNum (1,1) double {mustBeNumeric} = 6
             end
             
             fprintf('HeatMapの作成を開始します...\n');
@@ -191,16 +189,7 @@ classdef DataAnalyzer < handle
             % 描画オプションを構造体にまとめる
             plotOptions = options;
             plotOptions.Title = sprintf('Heatmap - %s about %s', plotDataA.Name, plotOptions.Property);
-            if options.MatNum == 4
-                plotOptions.MatNames = obj.MatNames3;
-            elseif options.MatNum == 2
-                plotOptions.MatNames = obj.MatNames5;
-            end
-            if options.ShapeNum == 6
-                plotOptions.ShapeNames = obj.ShapeNames;
-            elseif options.ShapeNum == 3
-                plotOptions.ShapeNames = obj.ShapeNames5;
-            end
+            [plotOptions.MatNames, plotOptions.ShapeNames] = obj.selectNamesFromDataSize(plotDataA.target, [], plotOptions.Mode);
 
             % --- 2. 統合されたヘルパー関数を呼び出す ---
             obj.generateHeatmap(plotDataA,plotOptions);
@@ -285,8 +274,6 @@ classdef DataAnalyzer < handle
                 options.PreDim   (1,1) double {mustBeNumeric} = 1
                 options.Mode     (1,1) string {mustBeMember(options.Mode, ["H", "HM", "HS", "HMS"])} = "H"
                 options.Residual (1,1) string {mustBeMember(options.Residual, ["regression", "outlier"])} = "regression"
-                options.MatNum (1,1) double {mustBeNumeric} = 4
-                options.ShapeNum (1,1) double {mustBeNumeric} = 6
             end
 
             fprintf('散布図の作成を開始します...\n');
@@ -304,16 +291,7 @@ classdef DataAnalyzer < handle
             plotOptions.NameA = dataSpecA.SetName;
             plotOptions.NameB = dataSpecB.SetName;
             plotOptions.Title = sprintf('%s vs %s about %s', plotOptions.NameA, plotOptions.NameB, plotOptions.Property);
-            if options.MatNum == 4
-                plotOptions.MatNames = obj.MatNames3;
-            elseif options.MatNum == 2
-                plotOptions.MatNames = obj.MatNames5;
-            end
-            if options.ShapeNum == 6
-                plotOptions.ShapeNames = obj.ShapeNames;
-            elseif options.ShapeNum == 3
-                plotOptions.ShapeNames = obj.ShapeNames5;
-            end
+            [plotOptions.MatNames, plotOptions.ShapeNames] = obj.selectNamesFromDataSize(plotData.targetA, plotData.targetB, plotOptions.Mode);
 
             % --- 2. 統合されたヘルパー関数を呼び出す ---
             obj.generateScatterPlot(plotData, plotOptions);
@@ -345,8 +323,7 @@ classdef DataAnalyzer < handle
                 options.InnerFactor (1,:) string = []
                 options.OuterFactor (1,:) string =  []
                 options.Switch string = "anova"
-                options.MatNum (1,1) double {mustBeNumeric} = 4
-                options.ShapeNum (1,1) double {mustBeNumeric} = 6
+                options.Mode (1,1) string {mustBeMember(options.Mode, ["H", "HM", "HS", "HMS"])} = "HMS"
             end
 
             % --- 1. データの準備 ---
@@ -359,16 +336,7 @@ classdef DataAnalyzer < handle
             plotDataA.Name = dataSpecA.SetName;
             plotDataB.Name = dataSpecB.SetName;
             
-            if options.MatNum == 4
-                plotOptions.MatNames = obj.MatNames3;
-            elseif options.MatNum == 2
-                plotOptions.MatNames = obj.MatNames5;
-            end
-            if options.ShapeNum == 6
-                plotOptions.ShapeNames = obj.ShapeNames;
-            elseif options.ShapeNum == 3
-                plotOptions.ShapeNames = obj.ShapeNames5;
-            end
+            [plotOptions.MatNames, plotOptions.ShapeNames] = obj.selectNamesFromDataSize(plotDataA.target, plotDataB.target, plotOptions.Mode);
 
             % --- 3. 統合された単一のヘルパー関数を呼び出す ---
             obj.generateANOVAPlot(plotDataA,plotDataB, plotOptions);
@@ -473,8 +441,8 @@ classdef DataAnalyzer < handle
                 dataSpecB (1,1) struct {mustHaveFields(dataSpecB, ["SetName", "TargetData"])}
                 options.Property (1,1) string = "GRI"
                 options.Amp      (1,1) double {mustBeNumeric} = 1.0
-                options.Save     (1,1)logical = true
-                options.Mode     (1,1) double {mustBeNumeric} = 1
+                options.Save     (1,1) logical = true
+                options.Mode     (1,1) string {mustBeMember(options.Mode, ["H", "HM", "HS", "HMS"])} = "H"
             end
 
             fprintf('残差プロットを作成しています...\n');
@@ -489,38 +457,8 @@ classdef DataAnalyzer < handle
 
             % --- 2. 残差の計算 ---
             residuals = data1 - data2;
-            fprintf('残差の平均: %.4f\n', mean(residuals));
-            fprintf('残差の標準偏差: %.4f\n', std(residuals));
-
-            % --- 3. ヘルパー関数を呼び出してプロットと保存を実行 ---
-            obj.generateResidualPlot(residuals, dataSpecA, dataSpecB, options);
-        end
-        
-        function plotScatter_indivisual(obj,dataSpecA,dataSpecB,options)
-            arguments
-                obj
-                dataSpecA (1,1) struct {mustHaveFields(dataSpecA, ["SetName", "TargetData"])}
-                dataSpecB (1,1) struct {mustHaveFields(dataSpecB, ["SetName", "TargetData"])}
-                options.Property (1,1) string = "GRI"
-                options.Amp      (1,1) double {mustBeNumeric} = 1.0
-                options.Save     (1,1)logical = true
-                options.Mode     (1,1) double {mustBeNumeric} = 1
-            end
-
-            fprintf('残差プロットを作成しています...\n');
-
-            % --- 1. データの抽出と検証 ---
-            data1 = obj.getDataFromSet(dataSpecA.SetName, dataSpecA.TargetData);
-            data2 = obj.getDataFromSet(dataSpecB.SetName, dataSpecB.TargetData);
-
-            if numel(data1) ~= numel(data2)
-                error('比較する2つのデータの要素数が異なります。');
-            end
-
-            % --- 2. 残差の計算 ---
-            residuals = data1 - data2;
-            fprintf('残差の平均: %.4f\n', mean(residuals));
-            fprintf('残差の標準偏差: %.4f\n', std(residuals));
+            fprintf('残差の平均: %.4f\n', mean(residuals(:)));
+            fprintf('残差の標準偏差: %.4f\n', std(residuals(:)));
 
             % --- 3. ヘルパー関数を呼び出してプロットと保存を実行 ---
             obj.generateResidualPlot(residuals, dataSpecA, dataSpecB, options);
@@ -621,6 +559,304 @@ classdef DataAnalyzer < handle
             extracted_data = data(idx{:});
         end
         
+        %% --- 統一化されたヘルパーメソッド ---
+        
+        % モードに応じたレイアウト設定を返す
+        function [layoutConfig] = configurePlotLayout(obj, mode, matNum, shapeNum)
+            % 入力:
+            %   mode (string): "H", "HM", "HS", "HMS"
+            %   matNum (double): 材質の数 (2 or 4)
+            %   shapeNum (double): 形状の数 (3 or 6)
+            % 出力:
+            %   layoutConfig (struct): レイアウト設定
+            %     - rows: タイルの行数
+            %     - cols: タイルの列数
+            %     - labels: ラベル配列
+            %     - loopCount: ループ回数
+            
+            layoutConfig = struct();
+            
+            switch mode
+                case "H"
+                    layoutConfig.rows = 1;
+                    layoutConfig.cols = 1;
+                    layoutConfig.labels = {};
+                    layoutConfig.loopCount = 1;
+                    
+                case "HM"
+                    layoutConfig.rows = 2;
+                    layoutConfig.cols = 2;
+                    if matNum == 4
+                        layoutConfig.labels = obj.MatNames3;
+                    else
+                        layoutConfig.labels = obj.MatNames5;
+                    end
+                    layoutConfig.loopCount = matNum;
+                    
+                case "HS"
+                    layoutConfig.rows = 2;
+                    layoutConfig.cols = 3;
+                    if shapeNum == 6
+                        layoutConfig.labels = obj.ShapeNames;
+                    else
+                        layoutConfig.labels = obj.ShapeNames5;
+                    end
+                    layoutConfig.loopCount = shapeNum;
+                    
+                case "HMS"
+                    layoutConfig.rows = 2;
+                    layoutConfig.cols = 3;
+                    layoutConfig.labels = obj.ShapeNames;
+                    layoutConfig.loopCount = 6;
+            end
+        end
+        
+        % モードとデータから材質数と形状数を取得
+        function [matCount, shapeCount] = getMatShapeCount(obj, data, mode)
+            % 入力:
+            %   data: データ配列
+            %   mode (string): "H", "HM", "HS", "HMS"
+            % 出力:
+            %   matCount: 材質の数
+            %   shapeCount: 形状の数
+            %
+            % 注意: 各モードでデータの次元構造が異なる
+            %   H:   [照明条件] -> matCount=1, shapeCount=1
+            %   HM:  [照明条件, 材質条件] -> matCount=次元2, shapeCount=1
+            %   HS:  [照明条件, 形状条件] -> matCount=1, shapeCount=次元2
+            %   HMS: [照明条件, 材質条件, 形状条件] -> matCount=次元2, shapeCount=次元3
+            
+            dataSize = size(data);
+            
+            switch mode
+                case "H"
+                    matCount = 1;
+                    shapeCount = 1;
+                    
+                case "HM"
+                    if length(dataSize) >= 2
+                        matCount = dataSize(2);
+                    else
+                        matCount = 1;
+                    end
+                    shapeCount = 1;
+                    
+                case "HS"
+                    matCount = 1;
+                    if length(dataSize) >= 2
+                        shapeCount = dataSize(2);
+                    else
+                        shapeCount = 1;
+                    end
+                    
+                case "HMS"
+                    if length(dataSize) >= 2
+                        matCount = dataSize(2);
+                    else
+                        matCount = 1;
+                    end
+                    if length(dataSize) >= 3
+                        shapeCount = dataSize(3);
+                    else
+                        shapeCount = 1;
+                    end
+                    
+                otherwise
+                    matCount = 1;
+                    shapeCount = 1;
+            end
+        end
+        
+        % Figure とタイルレイアウトを作成
+        function [fig, tLayout] = createFigureWithLayout(obj, mode, matNum, shapeNum)
+            % 入力:
+            %   mode (string): "H", "HM", "HS", "HMS"
+            %   matNum (double): 材質の数
+            %   shapeNum (double): 形状の数
+            % 出力:
+            %   fig: Figure オブジェクト
+            %   tLayout: タイルレイアウトオブジェクト
+            
+            fig = figure('Visible', 'off');
+            layoutConfig = obj.configurePlotLayout(mode, matNum, shapeNum);
+            
+            if mode == "H"
+                tLayout = [];
+            else
+                tLayout = tiledlayout(layoutConfig.rows, layoutConfig.cols, ...
+                    'TileSpacing', 'compact', 'Padding', 'compact');
+            end
+        end
+        
+        % 統一された命名規則でファイル名を生成して保存
+        function saveFigureWithNaming(obj, fig, nameA, nameB, property, mode, matIdx, plotType)
+            % 入力:
+            %   fig: Figure オブジェクト
+            %   nameA, nameB (string): データセット名
+            %   property (string): プロパティ名
+            %   mode (string): モード
+            %   matIdx (double): 材質インデックス (HMS モードのみ)
+            %   plotType (string): プロットタイプ ("scatter", "Histgram", "Significance" など)
+            
+            filename_suffix = mode;
+            if mode == "HMS" && ~isempty(matIdx)
+                filename_suffix = "HMS_" + string(obj.MatNames3(matIdx));
+            end
+            
+            if isempty(nameB)
+                % 単一データセットの場合
+                plotFileName = sprintf('%s_%s_%s_%s.jpg', nameA, property, plotType, filename_suffix);
+            else
+                % 2つのデータセット比較の場合
+                plotFileName = sprintf('%svs%s_%s_%s_%s.jpg', nameA, nameB, property, filename_suffix, plotType);
+            end
+            
+            plotFullPath = fullfile(obj.ResultDir, plotFileName);
+            saveas(fig, plotFullPath);
+            close(fig);
+            fprintf('  -> プロットを保存しました: %s\n', plotFileName);
+        end
+        
+        % モードに応じてデータを準備
+        function [preparedData] = prepareDataForMode(obj, data, mode, idx)
+            % 入力:
+            %   data: 元のデータ配列
+            %   mode (string): "H", "HM", "HS", "HMS"
+            %   idx (double): インデックス (HMS モードで使用)
+            % 出力:
+            %   preparedData: 整形されたデータ
+            
+            switch mode
+                case "H"
+                    preparedData = data(:);
+                    
+                case "HM"
+                    preparedData = data;
+                    
+                case "HS"
+                    % 次元を並び替え: [hdr, mat, shape, ...] -> [hdr, shape, mat, ...]
+                    preparedData = permute(data, [1, 3, 2, 4, 5]);
+                    
+                case "HMS"
+                    % 特定の材質インデックスのデータを抽出
+                    if nargin < 4 || isempty(idx)
+                        error('HMS モードではインデックスが必要です');
+                    end
+                    preparedData = data;
+            end
+        end
+        
+        % データサイズとモードに基づいて材質名と形状名を自動選択
+        function [matNames, shapeNames] = selectNamesFromDataSize(obj, dataA, dataB, mode)
+            % 入力:
+            %   dataA, dataB: データ配列（どちらか一方でも可）
+            %   mode (string): "H", "HM", "HS", "HMS"
+            % 出力:
+            %   matNames: 材質名の配列
+            %   shapeNames: 形状名の配列
+            %
+            % 注意: 各モードでデータの次元構造が異なる
+            %   H:   [照明条件]
+            %   HM:  [照明条件, 材質条件]
+            %   HS:  [照明条件, 形状条件]
+            %   HMS: [照明条件, 材質条件, 形状条件]
+            
+            % データAとBのサイズを取得（小さい方に合わせる）
+            if nargin < 3 || isempty(dataB)
+                % データAのみの場合
+                numDims = max(ndims(dataA), 3);
+                sizeA = ones(1, numDims);
+                actualSize = size(dataA);
+                sizeA(1:length(actualSize)) = actualSize;
+            else
+                % 両方ある場合は小さい方に合わせる
+                numDims = max(max(ndims(dataA), ndims(dataB)), 3);
+                sizeA = ones(1, numDims);
+                sizeB = ones(1, numDims);
+                
+                actualSizeA = size(dataA);
+                actualSizeB = size(dataB);
+                sizeA(1:length(actualSizeA)) = actualSizeA;
+                sizeB(1:length(actualSizeB)) = actualSizeB;
+                
+                % モードに応じて適切な次元を比較
+                switch mode
+                    case "H"
+                        % H モードでは次元情報なし
+                    case "HM"
+                        % 次元2が材質
+                        matDim = min(sizeA(2), sizeB(2));
+                        sizeA(2) = matDim;
+                    case "HS"
+                        % 次元2が形状
+                        shapeDim = min(sizeA(2), sizeB(2));
+                        sizeA(2) = shapeDim;
+                    case "HMS"
+                        % 次元2が材質、次元3が形状
+                        matDim = min(sizeA(2), sizeB(2));
+                        shapeDim = min(sizeA(3), sizeB(3));
+                        sizeA(2) = matDim;
+                        sizeA(3) = shapeDim;
+                end
+            end
+            
+            % モードに応じて材質名と形状名を選択
+            switch mode
+                case "H"
+                    % H モードではデフォルト値を使用
+                    matNames = obj.MatNames3;
+                    shapeNames = obj.ShapeNames;
+                    
+                case "HM"
+                    % 次元2が材質条件
+                    switch sizeA(2)
+                        case 4
+                            matNames = obj.MatNames3;
+                        case 2
+                            matNames = obj.MatNames5;
+                        otherwise
+                            matNames = obj.MatNames3;
+                    end
+                    shapeNames = obj.ShapeNames; % デフォルト
+                    
+                case "HS"
+                    % 次元2が形状条件
+                    matNames = obj.MatNames3; % デフォルト
+                    switch sizeA(2)
+                        case 6
+                            shapeNames = obj.ShapeNames;
+                        case 3
+                            shapeNames = obj.ShapeNames5;
+                        otherwise
+                            shapeNames = obj.ShapeNames;
+                    end
+                    
+                case "HMS"
+                    % 次元2が材質、次元3が形状
+                    switch sizeA(2)
+                        case 4
+                            matNames = obj.MatNames3;
+                        case 2
+                            matNames = obj.MatNames5;
+                        otherwise
+                            matNames = obj.MatNames3;
+                    end
+                    switch sizeA(3)
+                        case 6
+                            shapeNames = obj.ShapeNames;
+                        case 3
+                            shapeNames = obj.ShapeNames5;
+                        otherwise
+                            shapeNames = obj.ShapeNames;
+                    end
+                    
+                otherwise
+                    % 不明なモードの場合はデフォルト
+                    matNames = obj.MatNames3;
+                    shapeNames = obj.ShapeNames;
+            end
+        end
+        
         %% --- テスト  ---
         function generateTestPlot(obj,plotDataA, plotOptions)
             dataA = plotDataA.target;
@@ -649,80 +885,102 @@ classdef DataAnalyzer < handle
         end
         
         function drawAndSaveHistgramCompare(obj, plotDataA,plotDataB, plotOptions, mat_idx)
-            if nargin < 4
+            if nargin < 5
                 mat_idx = []; % HMSモードでない場合は空
             end
 
-            fig = figure('Visible', 'off');
+            try
+                % モードに応じた材質数と形状数を取得
+                [matCount, shapeCount] = obj.getMatShapeCount(plotDataA.target, plotOptions.Mode);
+                
+                % レイアウト設定を取得
+                layoutConfig = obj.configurePlotLayout(plotOptions.Mode, matCount, shapeCount);
+                
+                % Figure とレイアウトを作成
+                [fig, tLayout] = obj.createFigureWithLayout(plotOptions.Mode, matCount, shapeCount);
+
+                % モードに応じてプロット
+                switch plotOptions.Mode
+                    case "H"
+                        obj.plotHistgramSingle(plotDataA, plotDataB, plotOptions, plotOptions.Title);
+                        
+                    case {"HM", "HS"}
+                        sgtitle(tLayout, plotOptions.Title, 'Interpreter', 'none');
+                        for i = 1:layoutConfig.loopCount
+                            nexttile;
+                            titleStr = sprintf('%s', string(layoutConfig.labels(i)));
+                            obj.plotHistgramSingle(plotDataA, plotDataB, plotOptions, titleStr, i);
+                        end
+                        
+                    case "HMS"
+                        titleStr = sprintf('%s-%s', plotOptions.Title, string(obj.MatNames3(mat_idx)));
+                        sgtitle(tLayout, titleStr, 'Interpreter', 'none');
+                        
+                        for shape = 1:layoutConfig.loopCount
+                            nexttile;
+                            titleStr = sprintf('%s', string(obj.ShapeNames(shape)));
+                            obj.plotHistgramSingle(plotDataA, plotDataB, plotOptions, titleStr, mat_idx, shape);
+                        end
+                end
+
+                % 保存 (ヒストグラムは特殊な命名規則を使用)
+                filename_suffix = plotOptions.Mode;
+                if plotOptions.Mode == "HMS"
+                    filename_suffix = "HMS_" + string(obj.MatNames3(mat_idx));
+                end
+                plotFileName = sprintf('%s vs %s_%s_%s_Histgram.jpg', plotDataA.Name, plotDataB.Name, plotOptions.Property, filename_suffix);
+                plotFullPath = fullfile(obj.ResultDir, plotFileName);
+                saveas(fig, plotFullPath);
+                close(fig);
+                fprintf('  -> Histgramを保存しました\n');
+
+            catch ME
+                if exist('fig', 'var') && isvalid(fig)
+                    close(fig);
+                end
+                rethrow(ME);
+            end
+        end
+        
+        % 単一のヒストグラムをプロット
+        function plotHistgramSingle(obj, plotDataA, plotDataB, plotOptions, titleStr, matIdx, shapeIdx)
+            % 入力:
+            %   plotDataA, plotDataB: プロットデータ
+            %   plotOptions: プロットオプション
+            %   titleStr: タイトル文字列
+            %   matIdx: 材質インデックス (オプション)
+            %   shapeIdx: 形状インデックス (オプション)
             
-            % モードに応じてループ処理
-            switch plotOptions.Mode
-                case "H"
-                    titleStr = plotOptions.Title;
-                    PlotHistgram_ver1(plotDataA,plotDataB,...
-                        "XLabel",sprintf('Illumination map'),...
-                        "YLabel",sprintf('%s',plotOptions.Property),...
-                        "Title",titleStr,"HDRNo",plotOptions.hdr,"Amp",plotOptions.Amp);
-                case {"HM", "HS"}                        
-                    if plotOptions.Mode == "HM"
-                        tiledlayout(2,2,'TileSpacing', 'compact', 'Padding', 'compact');
-                        labels = obj.MatNames3;
-                    else % "HS"
-                        tiledlayout(2,3,'TileSpacing', 'compact', 'Padding', 'compact');
-                        labels = obj.ShapeNames;
-                    end
-
-                    sgtitle(plotOptions.Title, 'Interpreter', 'none');
-                    for i = 1:size(plotDataA.targetA, 2)
-                        nexttile;
-                        titleStr = sprintf('%s',string(labels(i)));
-                        HistgramDataA.target = plotDataA.target(:,i);
-                        HistgramDataA.error = plotDataA.error(:,i);
-                        HistgramDataA.Name = plotDataA.Name;
-                        
-                        HistgramDataB.target = plotDataB.target(:,i);
-                        HistgramDataB.error = plotDataB.error(:,i);
-                        HistgramDataB.Name = plotDataB.Name;
-
-                        PlotHistgram_ver1(HistgramDataA,HistgramDataB,...
-                            "XLabel",sprintf('Illumination map'),...
-                            "YLabel",sprintf('%s',plotOptions.Property),...
-                            "Title",titleStr,"HDRNo",plotOptions.hdr,"Amp",plotOptions.Amp);
-                    end
-                case "HMS"
-                    tiledlayout(2,3,'TileSpacing', 'compact', 'Padding', 'compact');
-                    titleStr = sprintf('%s-%s', plotOptions.Title,string(obj.MatNames3(mat_idx)));
-                    sgtitle(titleStr, 'Interpreter', 'none');
-
-                    for shape = 1:size(plotDataA.targetA, 3)
-                        nexttile;
-                        titleStr = sprintf('%s',string(obj.ShapeNames(shape)));
-
-                        HistgramDataA.target = plotDataA.target(:,mat_idx,shape);
-                        HistgramDataA.error = plotDataA.error(:,mat_idx,shape);
-                        HistgramDataA.Name = plotDataA.Name;
-                        
-                        HistgramDataB.target = plotDataB.target(:,mat_idx,shape);
-                        HistgramDataB.error = plotDataB.error(:,mat_idx,shape);
-                        HistgramDataB.Name = plotDataB.Name;
-                        
-                        PlotHistgram_ver1(HistgramDataA,HistgramDataB,...
-                            "XLabel",sprintf('Illumination map'),...
-                            "YLabel",sprintf('%s',plotOptions.Property),...
-                            "Title",titleStr,"HDRNo",plotOptions.hdr,"Amp",plotOptions.Amp);
-                    end
+            % データを準備
+            if nargin < 6
+                % H モード
+                HistgramDataA = plotDataA;
+                HistgramDataB = plotDataB;
+            elseif nargin < 7
+                % HM または HS モード
+                HistgramDataA.target = plotDataA.target(:, matIdx);
+                HistgramDataA.error = plotDataA.error(:, matIdx);
+                HistgramDataA.Name = plotDataA.Name;
+                
+                HistgramDataB.target = plotDataB.target(:, matIdx);
+                HistgramDataB.error = plotDataB.error(:, matIdx);
+                HistgramDataB.Name = plotDataB.Name;
+            else
+                % HMS モード
+                HistgramDataA.target = plotDataA.target(:, matIdx, shapeIdx);
+                HistgramDataA.error = plotDataA.error(:, matIdx, shapeIdx);
+                HistgramDataA.Name = plotDataA.Name;
+                
+                HistgramDataB.target = plotDataB.target(:, matIdx, shapeIdx);
+                HistgramDataB.error = plotDataB.error(:, matIdx, shapeIdx);
+                HistgramDataB.Name = plotDataB.Name;
             end
-
-            % ファイル名の決定と保存
-            filename_suffix = plotOptions.Mode;
-            if plotOptions.Mode == "HMS"
-                filename_suffix = "HMS_" + string(obj.MatNames3(mat_idx));
-            end
-            plotFileName = sprintf('%s vs %s_%s_%s_Histgram.jpg', plotDataA.Name,plotDataB.Name, plotOptions.Property, filename_suffix);
-            plotFullPath = fullfile(obj.ResultDir, plotFileName);
-            saveas(fig, plotFullPath);
-            fprintf('  -> Histgramを保存しました\n');
-
+            
+            % ヒストグラムをプロット
+            PlotHistgram_ver1(HistgramDataA, HistgramDataB, ...
+                "XLabel", sprintf('Illumination map'), ...
+                "YLabel", sprintf('%s', plotOptions.Property), ...
+                "Title", titleStr, "HDRNo", plotOptions.hdr, "Amp", plotOptions.Amp);
         end
         
         %% ---Heatmap---
@@ -773,67 +1031,82 @@ classdef DataAnalyzer < handle
                 mat_idx = []; % HMSモードでない場合は空
             end
 
-            fig = [];
             try
-                fig = figure('Visible', 'off');
+                % モードに応じた材質数と形状数を取得
+                [matCount, shapeCount] = obj.getMatShapeCount(plotData.targetA, plotOptions.Mode);
+                
+                % レイアウト設定を取得
+                layoutConfig = obj.configurePlotLayout(plotOptions.Mode, matCount, shapeCount);
+                
+                % Figure とレイアウトを作成
+                [fig, tLayout] = obj.createFigureWithLayout(plotOptions.Mode, matCount, shapeCount);
 
-                % モードに応じてループ処理
+                % モードに応じてプロット
                 switch plotOptions.Mode
                     case "H"
-                        titleStr = plotOptions.Title;
-                        PlotScatter_ver2(plotData.targetA(:), plotData.targetB(:),...
-                            "XLabel",sprintf('%s-%s',plotOptions.NameA,plotOptions.Property),...
-                            "YLabel",sprintf('%s-%s',plotOptions.NameB,plotOptions.Property),...
-                            "Mode",plotOptions.Residual,"Title",titleStr,"HDRNo",plotData.hdr,"Amp",plotOptions.Amp,"FitType","linear");
-                    case {"HM", "HS"}                        
-                        if plotOptions.Mode == "HM"
-                            tiledlayout(2,2,'TileSpacing', 'compact', 'Padding', 'compact');
-                            labels = plotOptions.MatNames;
-                        else % "HS"
-                            tiledlayout(2,3,'TileSpacing', 'compact', 'Padding', 'compact');
-                            labels = plotOptions.ShapeNames;
+                        obj.plotScatterSingle(plotData, plotOptions, plotOptions.Title);
+                        
+                    case {"HM", "HS"}
+                        sgtitle(tLayout, plotOptions.Title, 'Interpreter', 'none');
+                        for i = 1:layoutConfig.loopCount
+                            nexttile;
+                            titleStr = sprintf('%s', string(layoutConfig.labels(i)));
+                            obj.plotScatterSingle(plotData, plotOptions, titleStr, i);
                         end
                         
-                        sgtitle(plotOptions.Title, 'Interpreter', 'none');
-                        for i = 1:size(plotData.targetA, 2)
-                            nexttile;
-                            titleStr = sprintf('%s',string(labels(i)));
-                            
-                            PlotScatter_ver2(plotData.targetA(:,i), plotData.targetB(:,i),...
-                                "XLabel",sprintf('%s-%s',plotOptions.NameA,plotOptions.Property),...
-                                "YLabel",sprintf('%s-%s',plotOptions.NameB,plotOptions.Property),...
-                                "Mode",plotOptions.Residual,"Title",titleStr,"HDRNo",plotData.hdr,"Amp",plotOptions.Amp,"FitType","linear");
-                        end
                     case "HMS"
-                        tiledlayout(2,3,'TileSpacing', 'compact', 'Padding', 'compact');
-                        titleStr = sprintf('%s-%s', plotOptions.Title,string(plotOptions.MatNames(mat_idx)));
-                        sgtitle(titleStr, 'Interpreter', 'none');
+                        titleStr = sprintf('%s-%s', plotOptions.Title, string(plotOptions.MatNames(mat_idx)));
+                        sgtitle(tLayout, titleStr, 'Interpreter', 'none');
                         
-                        for shape = 1:size(plotData.targetA, 3)
+                        for shape = 1:layoutConfig.loopCount
                             nexttile;
-                            titleStr = sprintf('%s',string(plotOptions.ShapeNames(shape)));
-                            
-                            PlotScatter_ver2(plotData.targetA(:,mat_idx,shape), plotData.targetB(:,mat_idx,shape),...
-                                "XLabel",sprintf('%s-%s',plotOptions.NameA,plotOptions.Property),...
-                                "YLabel",sprintf('%s-%s',plotOptions.NameB,plotOptions.Property),...
-                                "Mode",plotOptions.Residual,"Title",titleStr,"HDRNo",plotData.hdr,"Amp",plotOptions.Amp,"FitType","linear");
+                            titleStr = sprintf('%s', string(plotOptions.ShapeNames(shape)));
+                            obj.plotScatterSingle(plotData, plotOptions, titleStr, mat_idx, shape);
                         end
                 end
 
-                % ファイル名の決定と保存
-                filename_suffix = plotOptions.Mode;
-                if plotOptions.Mode == "HMS"
-                    filename_suffix = "HMS_" + string(plotOptions.MatNames(mat_idx));
-                end
-                plotFileName = sprintf('%svs%s_%s_%s_scatter.jpg', plotOptions.NameA, plotOptions.NameB, plotOptions.Property, filename_suffix);
-                plotFullPath = fullfile(obj.ResultDir, plotFileName);
-                saveas(fig, plotFullPath);
-                fprintf('  -> 散布図を保存しました\n');
+                % 保存
+                obj.saveFigureWithNaming(fig, plotOptions.NameA, plotOptions.NameB, ...
+                    plotOptions.Property, plotOptions.Mode, mat_idx, 'scatter');
 
             catch ME
-                if ~isempty(fig), close(fig); end
+                if exist('fig', 'var') && isvalid(fig)
+                    close(fig);
+                end
                 rethrow(ME);
             end
+        end
+        
+        % 単一の散布図をプロット
+        function plotScatterSingle(obj, plotData, plotOptions, titleStr, matIdx, shapeIdx)
+            % 入力:
+            %   plotData: プロットデータ
+            %   plotOptions: プロットオプション
+            %   titleStr: タイトル文字列
+            %   matIdx: 材質インデックス (オプション)
+            %   shapeIdx: 形状インデックス (オプション)
+            
+            % データを取得
+            if nargin < 5
+                % H モード
+                dataA = plotData.targetA(:);
+                dataB = plotData.targetB(:);
+            elseif nargin < 6
+                % HM または HS モード
+                dataA = plotData.targetA(:, matIdx);
+                dataB = plotData.targetB(:, matIdx);
+            else
+                % HMS モード
+                dataA = plotData.targetA(:, matIdx, shapeIdx);
+                dataB = plotData.targetB(:, matIdx, shapeIdx);
+            end
+            
+            % 散布図をプロット
+            PlotScatter_ver2(dataA, dataB, ...
+                "XLabel", sprintf('%s-%s', plotOptions.NameA, plotOptions.Property), ...
+                "YLabel", sprintf('%s-%s', plotOptions.NameB, plotOptions.Property), ...
+                "Mode", plotOptions.Residual, "Title", titleStr, ...
+                "HDRNo", plotData.hdr, "Amp", plotOptions.Amp, "FitType", "linear");
         end
         
         %% ANOVA
@@ -889,250 +1162,140 @@ classdef DataAnalyzer < handle
         end
         
         function BootstrapPlot(obj, plotDataA,plotDataB, plotOptions,mat_idx)
-            if nargin < 4
+            if nargin < 5
                 mat_idx = [];
             end
             
             dataA = plotDataA.target;
             dataB = plotDataB.target;
-            %plotOptions.Amp = 1;
             
             try
-                % figureの宣言
+                % Figure を作成
                 fig_significance = figure('Visible', 'off');
                 
-                fig_boxplotA = figure('Visible', 'off');
-                fig_frequencyA = figure('Visible', 'off');
-                fig_scatterA = figure('Visible', 'off');
-                fig_scatter2A = figure('Visible', 'off');
-                
+                % モードに応じて Bootstrap 解析とプロット
                 switch plotOptions.Mode
                     case "H"
-                        dataA_r = squeeze(mean(mean(dataA,3),2));
-                        dataB_r = squeeze(mean(mean(dataB,3),2));
+                        obj.plotBootstrapH(fig_significance, dataA, dataB, plotDataA, plotDataB, plotOptions);
                         
-                        [ceiling_distAA,ceiling_distAB,p_value,observed_corr,bca_ci_AA,bca_ci_AB] = Corr_Significance_v4(dataA, dataB, plotOptions.Bootstrap, plotOptions.Split);
-                        
-                        % sgtitle
-                        sgTitle = sprintf("%s vs %s - %s- all condition",plotDataA.Name,plotDataB.Name,plotOptions.Property);
-                        
-                        % ---plot significance ---
-                        t_significance = tiledlayout(fig_significance,1,1, 'Padding', 'normal');
-                        ax_significance = nexttile(t_significance);
-                        
-                        Graph_Significance_v2(ax_significance,observed_corr, ceiling_distAA,ceiling_distAB, p_value,bca_ci_AB,'Amp',plotOptions.Amp,'Title',sgTitle);
-                        y_Limits = ylim(ax_significance);
-                        x_Limits = xlim(ax_significance);
-                        text(ax_significance,x_Limits(1)*0.9,y_Limits(2)-0.05, '* : p < 0.05', 'FontSize', 10 * plotOptions.Amp);
-                        
-                        %% ---plot innner correlation coefficient ---
-                        %{
-                        t_boxplot = tiledlayout(fig_boxplotA,1,1, 'Padding', 'normal');
-                        t_frequency = tiledlayout(fig_frequencyA,1,1, 'Padding', 'normal');
-                        t_scatter = tiledlayout(fig_scatterA,1,1, 'Padding', 'normal');
-                        t_scatter2 = tiledlayout(fig_scatter2A,1,1, 'Padding', 'normal');
-                        
-                        figListA.boxplot = t_boxplot;
-                        figListA.frequency = t_frequency;
-                        figListA.scatter = t_scatter;
-                        figListA.scatter2 = t_scatter2;                      
-                        
-                        % data
-                        plotDataA_r.Original = dataA;
-                        plotDataA_r.Name = plotDataA.Name;
-                        plotDataA_r.Resampled = all_sampled_dataA;
-                        plotDataA_r.Corr = ceiling_distAA;
-                        plotOptions.Title = "";
-                        
-                        sgtitle(t_boxplot, sgTitle, 'Interpreter', 'none');
-                        sgtitle(t_frequency, sgTitle, 'Interpreter', 'none');
-                        sgtitle(t_scatter, sgTitle, 'Interpreter', 'none');
-                        sgtitle(t_scatter2, sgTitle, 'Interpreter', 'none');
-                        
-                        % draw
-                        if plotOptions.Distribution
-                            obj.plotBootstrapDistribution(figListA,plotDataA_r,plotOptions);
-                        end
-                        %}
-
                     case {"HM", "HS"}
-                        if plotOptions.Mode == "HS"
-                            dataA_r = permute(dataA,[1,3,2,4,5]);
-                            dataB_r = permute(dataB,[1,3,2,4,5]);
-                            
-                            labels = obj.ShapeNames;
-                            % sgtitle
-                            sgTitle = sprintf("%s vs %s - %s- shape",plotDataA.Name,plotDataB.Name,plotOptions.Property);
-                            
-                            t_boxplot = tiledlayout(fig_boxplotA,2,3, 'TileSpacing', 'compact', 'Padding', 'compact');
-                            t_frequency = tiledlayout(fig_frequencyA,2,3, 'TileSpacing', 'compact', 'Padding', 'compact');
-                            t_scatter = tiledlayout(fig_scatterA,2,3, 'TileSpacing', 'compact', 'Padding', 'compact');
-                            t_scatter2 = tiledlayout(fig_scatter2A,2,3, 'TileSpacing', 'compact', 'Padding', 'compact'); 
-                        else % HMモード
-                            dataA_r = dataA;
-                            dataB_r = dataB;
-                            
-                            labels = obj.MatNames3;
-                            % sgtitle
-                            sgTitle = sprintf("%s vs %s - %s- material",plotDataA.Name,plotDataB.Name,plotOptions.Property);
-                            
-                            t_boxplot = tiledlayout(fig_boxplotA,2,2, 'TileSpacing', 'compact', 'Padding', 'compact');
-                            t_frequency = tiledlayout(fig_frequencyA,2,2, 'TileSpacing', 'compact', 'Padding', 'compact');
-                            t_scatter = tiledlayout(fig_scatterA,2,2,'TileSpacing', 'compact', 'Padding', 'compact');
-                            t_scatter2 = tiledlayout(fig_scatter2A,2,2, 'TileSpacing', 'compact', 'Padding', 'compact'); 
-                        end
-                         
-                        % ---graph initialization
-                        t_significance = tiledlayout(fig_significance,1,1, 'Padding', 'normal');
-                        ax_significance = nexttile(t_significance);
-                        
-                        figListA.boxplot = t_boxplot;
-                        figListA.frequency = t_frequency;
-                        figListA.scatter = t_scatter;
-                        figListA.scatter2 = t_scatter2;  
-                        
-                        loopLimit = size(dataA_r, 2);                        
-                        for i = 1:loopLimit
-                            dataA_r2 = squeeze(dataA_r(:,i,:,:,:));
-                            dataB_r2 = squeeze(dataB_r(:,i,:,:,:));
-                            fprintf("%s",string(labels(i)));
-                            
-                            % calculate bootstrap
-                            %[ceiling_distAA,ceiling_distAB,p_value,observed_corr,all_sampled_dataA,all_sampled_dataB] = Corr_Significance_v3(dataA_r2, dataB_r2, plotOptions.Bootstrap, plotOptions.Split);
-                            [ceiling_distAA,ceiling_distAB,p_value,observed_corr,bca_ci_AA,bca_ci_AB] = Corr_Significance_v4(dataA_r2, dataB_r2, plotOptions.Bootstrap, plotOptions.Split);
-                            
-                            % ---plot significance hist ---
-                            %Graph_Significance(ax_significance,observed_corr, ceiling_distAA,ceiling_distAB, p_value, i,'Amp',plotOptions.Amp,'Title',sgTitle);
-                            Graph_Significance_v2(ax_significance,observed_corr, ceiling_distAA,ceiling_distAB, p_value,bca_ci_AB,i,'Amp',plotOptions.Amp,'Title',sgTitle);
-                            y_Limits = ylim(ax_significance);
-                            x_Limits = xlim(ax_significance);
-                            text(ax_significance,x_Limits(1)*0.9,y_Limits(2)-0.05, '* : p < 0.05', 'FontSize', 10 * plotOptions.Amp);
-                            
-                            %{
-                            % ---plot innner correlation coefficient ---
-                            plotDataA_r.Original = dataA_r2;
-                            plotDataA_r.Name = plotDataA.Name;
-                            plotDataA_r.Resampled = all_sampled_dataA;
-                            plotDataA_r.Corr = ceiling_distAA;
-                            plotOptions.Title = string(labels(i));
-                            
-                            % sgtitle
-                            sgtitle(t_boxplot, sgTitle, 'Interpreter', 'none');
-                            sgtitle(t_frequency, sgTitle, 'Interpreter', 'none');
-                            sgtitle(t_scatter, sgTitle, 'Interpreter', 'none');
-                            sgtitle(t_scatter2, sgTitle, 'Interpreter', 'none');
-                            
-                            if plotOptions.Distribution
-                                obj.plotBootstrapDistribution(figListA,plotDataA_r,plotOptions);
-                            end
-                            %}
-                        end
-                        
-                        % --- finalization significance hist ---
-                        set(ax_significance, 'XTick', 1:length(labels), 'XTickLabel', labels);
+                        obj.plotBootstrapHMHS(fig_significance, dataA, dataB, plotDataA, plotDataB, plotOptions);
                         
                     case "HMS"
-                        [~,MatNum,ShapeNum,~,~] = size(dataA);
-                        % sgtitle
-                        sgTitle = sprintf("%s vs %s - %s - %s",plotDataA.Name,plotDataB.Name,plotOptions.Property,string(obj.MatNames3(mat_idx)));
-                        
-                        % --- initialization graph
-                        t_significance = tiledlayout(fig_significance,1,1, 'Padding', 'normal');
-                        ax_significance = nexttile(t_significance);
-                        
-                        t_boxplot = tiledlayout(fig_boxplotA,2,3,'TileSpacing', 'compact', 'Padding', 'compact');
-                        t_frequency = tiledlayout(fig_frequencyA,2,3, 'TileSpacing', 'compact', 'Padding', 'compact');
-                        t_scatter = tiledlayout(fig_scatterA,2,3, 'TileSpacing', 'compact', 'Padding', 'compact');
-                        t_scatter2 = tiledlayout(fig_scatter2A,2,3, 'TileSpacing', 'compact', 'Padding', 'compact'); 
-                        
-                        figListA.boxplot = t_boxplot;
-                        figListA.frequency = t_frequency;
-                        figListA.scatter = t_scatter;
-                        figListA.scatter2 = t_scatter2;  
-                        
-                        for shape = 1:ShapeNum
-                            dataA_r = squeeze(dataA(:,mat_idx,shape,:,:));
-                            dataB_r = squeeze(dataB(:,mat_idx,shape,:,:));
-                            fprintf("mat:%s, shape:%s",string(obj.MatNames1(mat_idx)),string(obj.ShapeNames(shape)));
-
-                            % calculate bootstrap
-                            %[ceiling_distAA,ceiling_distAB,p_value,observed_corr,all_sampled_dataA,all_sampled_dataB] = Corr_Significance_v3(dataA_r, dataB_r, plotOptions.Bootstrap, plotOptions.Split);
-                            [ceiling_distAA,ceiling_distAB,p_value,observed_corr,bca_ci_AA,bca_ci_AB] = Corr_Significance_v4(dataA_r, dataB_r, plotOptions.Bootstrap, plotOptions.Split);
-
-                            % ---plot significance hist ---
-                            %titlestr = sprintf("%s - %s",plotOptions.Title,string(obj.MatNames3(mat_idx)));
-                            %sgtitle(t_significance, titlestr, 'Interpreter', 'none');
-                            %Graph_Significance(ax_significance,observed_corr, ceiling_distAA,ceiling_distAB, p_value, shape,'Amp',plotOptions.Amp,'Title',sgTitle);
-                            Graph_Significance_v2(ax_significance,observed_corr, ceiling_distAA,ceiling_distAB, p_value,bca_ci_AB,shape,'Amp',plotOptions.Amp,'Title',sgTitle);
-                            y_Limits = ylim(ax_significance);
-                            x_Limits = xlim(ax_significance);
-                            text(ax_significance,x_Limits(1)*0.9,y_Limits(2)-0.05, '* : p < 0.05', 'FontSize', 10 * plotOptions.Amp);
-           
-                            %{
-                            % ---plot innner correlation coefficient ---
-                            plotDataA_r.Original = dataA_r;
-                            plotDataA_r.Name = plotDataA.Name;
-                            plotDataA_r.Resampled = all_sampled_dataA;
-                            plotDataA_r.Corr = ceiling_distAA;
-                            plotOptions.Title = string(obj.ShapeNames(shape));
-
-                            titlestr = sprintf("%s - %s",plotOptions.Title,string(obj.MatNames3(mat_idx)));
-                            sgtitle(t_boxplot, titlestr, 'Interpreter', 'none');
-                            
-                            sgtitle(t_boxplot, sgTitle, 'Interpreter', 'none');
-                            sgtitle(t_frequency, sgTitle, 'Interpreter', 'none');
-                            sgtitle(t_scatter, sgTitle, 'Interpreter', 'none');
-                            sgtitle(t_scatter2, sgTitle, 'Interpreter', 'none');
-
-                            if plotOptions.Distribution
-                                obj.plotBootstrapDistribution(figListA,plotDataA_r,plotOptions);
-                            end
-                            %}
-
-                        end
-                        
-                        % --- finalization graph ---
-                        set(ax_significance, 'XTick', 1:length(obj.ShapeNames), 'XTickLabel', obj.ShapeNames);
+                        obj.plotBootstrapHMS(fig_significance, dataA, dataB, plotDataA, plotDataB, plotOptions, mat_idx);
                 end
                 
-                % ファイル名の決定と保存
-                filename_suffix = plotOptions.Mode;
-                if plotOptions.Mode == "HMS"
-                    filename_suffix = plotOptions.Mode + string(obj.MatNames3(mat_idx));
-                end
-                % significance hist
-                plotFileName = sprintf('%svs%s_%s_Significance_%s.jpg',plotDataA.Name,plotDataB.Name, plotOptions.Property, filename_suffix);
-                plotFullPath = fullfile(obj.ResultDir, plotFileName);
-                saveas(fig_significance, plotFullPath);
-                
-                %{
-                % about A
-                % boxplot
-                plotFileName = sprintf('%s_%s_boxplot_A_%s.jpg',plotDataA.Name, plotOptions.Property, filename_suffix);
-                plotFullPath = fullfile(obj.ResultDir, plotFileName);
-                saveas(fig_boxplotA, plotFullPath);
-                
-                % frequency
-                plotFileName = sprintf('%s_%s_frequecny_A_%s.jpg',plotDataA.Name, plotOptions.Property, filename_suffix);
-                plotFullPath = fullfile(obj.ResultDir, plotFileName);
-                saveas(fig_frequencyA, plotFullPath);
-                
-                % scatter
-                plotFileName = sprintf('%s_%s_scatter_A_%s.jpg',plotDataA.Name, plotOptions.Property, filename_suffix);
-                plotFullPath = fullfile(obj.ResultDir, plotFileName);
-                saveas(fig_scatterA, plotFullPath);
-                
-                % scatter2
-                plotFileName = sprintf('%s_%s_scatter2_A_%s.jpg',plotDataA.Name, plotOptions.Property, filename_suffix);
-                plotFullPath = fullfile(obj.ResultDir, plotFileName);
-                saveas(fig_scatter2A, plotFullPath);
-                %}
+                % 保存
+                obj.saveFigureWithNaming(fig_significance, plotDataA.Name, plotDataB.Name, ...
+                    plotOptions.Property, plotOptions.Mode, mat_idx, 'Significance');
                 
                 fprintf('  -> 各種グラフを保存しました\n');
 
             catch ME
+                if exist('fig_significance', 'var') && isvalid(fig_significance)
+                    close(fig_significance);
+                end
                 rethrow(ME);
             end
+        end
+        
+        % H モードの Bootstrap プロット
+        function plotBootstrapH(obj, fig, dataA, dataB, plotDataA, plotDataB, plotOptions)
+            % Bootstrap 解析
+            [ceiling_distAA, ceiling_distAB, p_value, observed_corr, ~, bca_ci_AB] = ...
+                Corr_Significance_v4(dataA, dataB, plotOptions.Bootstrap, plotOptions.Split);
+            
+            % タイトル
+            sgTitle = sprintf("%s vs %s - %s- all condition", plotDataA.Name, plotDataB.Name, plotOptions.Property);
+            
+            % プロット
+            t_significance = tiledlayout(fig, 1, 1, 'Padding', 'normal');
+            ax_significance = nexttile(t_significance);
+            
+            Graph_Significance_v2(ax_significance, observed_corr, ceiling_distAA, ceiling_distAB, ...
+                p_value, bca_ci_AB, 'Amp', plotOptions.Amp, 'Title', sgTitle);
+            
+            obj.addSignificanceNote(ax_significance, plotOptions.Amp);
+        end
+        
+        % HM/HS モードの Bootstrap プロット
+        function plotBootstrapHMHS(obj, fig, dataA, dataB, plotDataA, plotDataB, plotOptions)
+            % データの準備
+            if plotOptions.Mode == "HS"
+                dataA_r = permute(dataA, [1, 3, 2, 4, 5]);
+                dataB_r = permute(dataB, [1, 3, 2, 4, 5]);
+                labels = obj.ShapeNames;
+                sgTitle = sprintf("%s vs %s - %s- shape", plotDataA.Name, plotDataB.Name, plotOptions.Property);
+            else % HM モード
+                dataA_r = dataA;
+                dataB_r = dataB;
+                labels = obj.MatNames3;
+                sgTitle = sprintf("%s vs %s - %s- material", plotDataA.Name, plotDataB.Name, plotOptions.Property);
+            end
+            
+            % グラフ初期化
+            t_significance = tiledlayout(fig, 1, 1, 'Padding', 'normal');
+            ax_significance = nexttile(t_significance);
+            
+            % 各条件でループ
+            loopLimit = size(dataA_r, 2);
+            for i = 1:loopLimit
+                dataA_r2 = squeeze(dataA_r(:, i, :, :, :));
+                dataB_r2 = squeeze(dataB_r(:, i, :, :, :));
+                fprintf("%s", string(labels(i)));
+                
+                % Bootstrap 解析
+                [ceiling_distAA, ceiling_distAB, p_value, observed_corr, ~, bca_ci_AB] = ...
+                    Corr_Significance_v4(dataA_r2, dataB_r2, plotOptions.Bootstrap, plotOptions.Split);
+                
+                % プロット
+                Graph_Significance_v2(ax_significance, observed_corr, ceiling_distAA, ceiling_distAB, ...
+                    p_value, bca_ci_AB, i, 'Amp', plotOptions.Amp, 'Title', sgTitle);
+            end
+            
+            % 軸ラベル設定
+            set(ax_significance, 'XTick', 1:length(labels), 'XTickLabel', labels);
+            obj.addSignificanceNote(ax_significance, plotOptions.Amp);
+        end
+        
+        % HMS モードの Bootstrap プロット
+        function plotBootstrapHMS(obj, fig, dataA, dataB, plotDataA, plotDataB, plotOptions, mat_idx)
+            % モードに応じた形状数を取得
+            [~, shapeCount] = obj.getMatShapeCount(dataA, "HMS");
+            
+            % タイトル
+            sgTitle = sprintf("%s vs %s - %s - %s", plotDataA.Name, plotDataB.Name, ...
+                plotOptions.Property, string(obj.MatNames3(mat_idx)));
+            
+            % グラフ初期化
+            t_significance = tiledlayout(fig, 1, 1, 'Padding', 'normal');
+            ax_significance = nexttile(t_significance);
+            
+            % 各形状でループ
+            for shape = 1:shapeCount
+                dataA_r = squeeze(dataA(:, mat_idx, shape, :, :));
+                dataB_r = squeeze(dataB(:, mat_idx, shape, :, :));
+                fprintf("mat:%s, shape:%s", string(obj.MatNames1(mat_idx)), string(obj.ShapeNames(shape)));
+                
+                % Bootstrap 解析
+                [ceiling_distAA, ceiling_distAB, p_value, observed_corr, ~, bca_ci_AB] = ...
+                    Corr_Significance_v4(dataA_r, dataB_r, plotOptions.Bootstrap, plotOptions.Split);
+                
+                % プロット
+                Graph_Significance_v2(ax_significance, observed_corr, ceiling_distAA, ceiling_distAB, ...
+                    p_value, bca_ci_AB, shape, 'Amp', plotOptions.Amp, 'Title', sgTitle);
+            end
+            
+            % 軸ラベル設定
+            set(ax_significance, 'XTick', 1:length(obj.ShapeNames), 'XTickLabel', obj.ShapeNames);
+            obj.addSignificanceNote(ax_significance, plotOptions.Amp);
+        end
+        
+        % 有意性の注釈を追加
+        function addSignificanceNote(obj, ax, amp)
+            y_Limits = ylim(ax);
+            x_Limits = xlim(ax);
+            text(ax, x_Limits(1)*0.9, y_Limits(2)-0.05, '* : p < 0.05', 'FontSize', 10 * amp);
         end
         
         function plotBootstrapDistribution(obj,figList,plotData,plotOptions)
@@ -1238,8 +1401,10 @@ classdef DataAnalyzer < handle
 
         %% vs model
         function CorrBootstrap_model_H(obj,dataA,dataB,dataC,nameA,nameB,nameC,numBootstrap,amp,property)
+            % 注意: このメソッドは HMS モードのデータ構造を前提としています
+            % データ構造: [照明条件, 材質条件, 形状条件, ...]
             dataA_reshaped = reshape(dataA,size(dataA,1),size(dataA,2),size(dataA,3),[]);
-            dataB_reshaped = reshape(dataB,size(dataB,1),size(dataB,2),size(dataB,3),[]); 
+            dataB_reshaped = reshape(dataB,size(dataB,1),size(dataB,2),size(dataB,3),[]);
 
             
             % 95%信頼区間の下限を確認
@@ -1300,58 +1465,72 @@ classdef DataAnalyzer < handle
                 fig = figure('Visible', 'off');
                 hold on;
                 
+                % モードに応じてデータを準備
+                [matCount, shapeCount] = obj.getMatShapeCount(residuals, options.Mode);
+                
                 % 2次元目でループして、同一グラフにプロット
                 for i = 1:size(residuals, 2)
-                    data_slice = residuals(:,i);
+                    data_slice = residuals(:, i);
                     plot(1:numel(data_slice), data_slice, '-o', 'LineWidth', 0.75);
                 end
                 
                 hold off;
                 grid on; box on; axis tight;
                 
+                % モードに応じて凡例とタイトルを設定
                 switch options.Mode
-                    case 1
-                        legend('Location', 'best','FontSize',3*options.Amp);
+                    case "H"
+                        legend('Location', 'best', 'FontSize', 3*options.Amp);
                         titleKind = 'All';
-                    case 2
-                        legend([obj.MatNames3], 'Location', 'best', 'Interpreter', 'none','FontSize',3*options.Amp);
+                    case "HM"
+                        [matNames, ~] = obj.selectNamesFromDataSize(residuals, [], options.Mode);
+                        legend(matNames, 'Location', 'best', 'Interpreter', 'none', 'FontSize', 3*options.Amp);
                         titleKind = 'Material';
-                    case 3
-                        legend([obj.ShapeNames], 'Location', 'best', 'Interpreter', 'none','FontSize',3*options.Amp);
+                    case "HS"
+                        [~, shapeNames] = obj.selectNamesFromDataSize(residuals, [], options.Mode);
+                        legend(shapeNames, 'Location', 'best', 'Interpreter', 'none', 'FontSize', 3*options.Amp);
                         titleKind = 'Shape';
+                    case "HMS"
+                        titleKind = 'HMS';
                 end
 
-                titleStr = sprintf('%s vs %s about %s\nResiduals_%s', dataSpec1.SetName, dataSpec2.SetName, options.Property,titleKind);
-                title(titleStr, 'Interpreter', 'none','FontSize',12*options.Amp);
-                xlabel('Illumination', 'Interpreter', 'none','FontSize',12*options.Amp);
-                ylabel('Residuals', 'Interpreter', 'none','FontSize',12*options.Amp);
+                titleStr = sprintf('%s vs %s about %s\\nResiduals_%s', dataSpec1.SetName, dataSpec2.SetName, options.Property, titleKind);
+                title(titleStr, 'Interpreter', 'none', 'FontSize', 12*options.Amp);
+                xlabel('Illumination', 'Interpreter', 'none', 'FontSize', 12*options.Amp);
+                ylabel('Residuals', 'Interpreter', 'none', 'FontSize', 12*options.Amp);
                 grid on; box on; axis tight;
                 
                 x = 1:length(obj.HDRNum_30);
                 set(gca, 'XTick', x);
                 xticklabels(obj.HDRNum_30);
                 xtickangle(90);
-                set(gca,'FontSize',6 * options.Amp);
+                set(gca, 'FontSize', 6 * options.Amp);
                 
-                ymax = max(abs(residuals),[],'all')*1.1;
+                ymax = max(abs(residuals), [], 'all') * 1.1;
                 ylim([-ymax ymax]);
 
                 if options.Save
                     plotFileName = sprintf('%svs%s_%s_%s_residual.jpg', ...
-                                           dataSpec1.SetName, dataSpec2.SetName, options.Property,titleKind);
+                                           dataSpec1.SetName, dataSpec2.SetName, options.Property, titleKind);
                     plotFullPath = fullfile(obj.ResultDir, plotFileName);
                     saveas(fig, plotFullPath);
                     fprintf('  -> 残差プロットを保存しました: %s\n', plotFullPath);
+                    close(fig);
                 else
                     set(fig, 'Visible', 'on');
                 end
             catch ME
+                if exist('fig', 'var') && isvalid(fig)
+                    close(fig);
+                end
                 rethrow(ME);
             end
         end
 
         % --- タイル表示の残差プロットを作成する新しいヘルパー関数 ---
         function createTiledResidualPlot(obj, residuals, dataSpec1, dataSpec2, options)
+            % 注意: このメソッドは HMS モードのデータ構造を前提としています
+            % residuals 構造: [照明条件, 材質条件, 形状条件]
             for mat = 1:size(residuals, 2)
                 fig = [];
                 try
