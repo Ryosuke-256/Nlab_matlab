@@ -18,7 +18,7 @@ classdef DataAnalyzer < handle
         MatNames1 = {'cu0025', 'cu0129', 'pla0075', 'pla0225'};
         MatNames2 = {'cu_0.025', 'cu_0.129', 'pla_0.075', 'pla_0.225'};
         MatNames3 = {'cu-0.025', 'cu-0.129', 'pla-0.075', 'pla-0.225'};
-        MatNames5 = {'cu','pla'};
+        MatNames5 = {'cu-0.025','pla-0.075'};
         
         HDRNames_15 = [19, 39, 78, 80, 102, 125, 152, 203, 226, 227, 230, 232, 243, 278, 281];
         HDRNames_30 = [5,19,34,39,42,43,78,80,102,105,125,152,164,183,198,201,202,203,209,222,226,227,230,232,243,259,272,278,281,282];
@@ -444,6 +444,105 @@ classdef DataAnalyzer < handle
 
             fprintf('Testが完了しました。\n');
         end
+        %% 被験者内の標準偏差を比較する解析（単一データ）
+        function SubjectSDAnalysis(obj, dataSpecA, options)
+            % ■ 入力:
+            %   dataSpecA: データセットAの仕様
+            
+            arguments
+                obj
+                dataSpecA (1,1) struct {mustHaveFields(dataSpecA, ["SetName", "TargetData"])}
+                options.Property (1,1) string = "GRI"
+                options.Amp      (1,1) double {mustBeNumeric} = 1.0
+                options.Mode     (1,1) string {mustBeMember(options.Mode, ["H", "HM", "HS", "HMS"])} = "H"
+            end
+            
+            fprintf('被験者SD解析(Single)を開始します...\n');
+            
+            % --- 1. データの準備 ---
+            plotData.targetA = obj.getDataFromSet(dataSpecA.SetName, dataSpecA.TargetData);
+            plotData.NameA = dataSpecA.SetName;
+            
+            % --- 2. オプションの準備 ---
+            plotOptions = options;
+            [plotOptions.MatNames, plotOptions.ShapeNames] = obj.selectNamesFromDataSize(plotData.targetA, [], plotOptions.Mode);
+            plotOptions.ParticipantsNames = obj.ParticipantsNames_Exp3;
+            plotOptions.HDRNum = obj.HDRNum_30;
+            
+            % --- 3. 外部関数を呼び出す ---
+            generateSubjectSDPlot(plotData, plotOptions, obj.ResultDir);
+            
+            fprintf('被験者SD解析が完了しました。\n');
+        end
+
+        %% 被験者内の標準偏差を比較する解析（比較データ）
+        function SubjectSDAnalysisCompare(obj, dataSpecA, dataSpecB, options)
+            % ■ 入力:
+            %   dataSpecA, dataSpecB: 比較する2つのデータセット
+            
+            arguments
+                obj
+                dataSpecA (1,1) struct {mustHaveFields(dataSpecA, ["SetName", "TargetData"])}
+                dataSpecB (1,1) struct {mustHaveFields(dataSpecB, ["SetName", "TargetData"])}
+                options.Property (1,1) string = "GRI"
+                options.Amp      (1,1) double {mustBeNumeric} = 1.0
+                options.Mode     (1,1) string {mustBeMember(options.Mode, ["H", "HM", "HS", "HMS"])} = "H"
+            end
+            
+            fprintf('被験者SD解析(Compare)を開始します...\n');
+            
+            % --- 1. データの準備 ---
+            dataA = obj.getDataFromSet(dataSpecA.SetName, dataSpecA.TargetData);
+            dataB = obj.getDataFromSet(dataSpecB.SetName, dataSpecB.TargetData);
+            
+            % --- 2. 共通の条件（材質・形状）を抽出してデータをアライメント ---
+            % HMSモードとして名前を取得し、データ構造(Raw_HMSPT)に対応させる
+            [matNamesA, shapeNamesA] = obj.selectNamesFromDataSize(dataA, [], "HMS");
+            [matNamesB, shapeNamesB] = obj.selectNamesFromDataSize(dataB, [], "HMS");
+            
+            % 共通の名前とインデックスを取得
+            [commonMatNames, iA_mat, iB_mat] = intersect(matNamesA, matNamesB, 'stable');
+            [commonShapeNames, iA_shape, iB_shape] = intersect(shapeNamesA, shapeNamesB, 'stable');
+            
+            if isempty(commonMatNames)
+                warning('共通の材質条件が見つかりませんでした。');
+            elseif length(commonMatNames) < length(matNamesA) || length(commonMatNames) < length(matNamesB)
+                fprintf('  -> 共通の材質条件にデータを制限します: %s\n', strjoin(commonMatNames, ', '));
+            end
+            
+            if isempty(commonShapeNames)
+                warning('共通の形状条件が見つかりませんでした。');
+            elseif length(commonShapeNames) < length(shapeNamesA) || length(commonShapeNames) < length(shapeNamesB)
+                fprintf('  -> 共通の形状条件にデータを制限します: %s\n', strjoin(commonShapeNames, ', '));
+            end
+            
+            % データをフィルタリング [H, M, S, P, T]
+            % ※データが5次元未満の場合のハンドリングが必要だが、Row_HMSPTは通常5次元
+            if ndims(dataA) >= 3
+                dataA = dataA(:, iA_mat, iA_shape, :, :);
+            end
+            if ndims(dataB) >= 3
+                dataB = dataB(:, iB_mat, iB_shape, :, :);
+            end
+            
+            plotData.targetA = dataA;
+            plotData.NameA = dataSpecA.SetName;
+            plotData.targetB = dataB;
+            plotData.NameB = dataSpecB.SetName;
+            
+            % --- 3. オプションの準備 ---
+            plotOptions = options;
+            plotOptions.MatNames = commonMatNames;
+            plotOptions.ShapeNames = commonShapeNames;
+            plotOptions.ParticipantsNames = obj.ParticipantsNames_Exp3;
+            plotOptions.HDRNum = obj.HDRNum_30;
+            
+            % --- 4. 外部関数を呼び出す ---
+            generateSubjectSDPlot(plotData, plotOptions, obj.ResultDir);
+            
+            fprintf('被験者SD解析(比較)が完了しました。\n');
+        end
+
     end
     
     % --- 内部ヘルパーメソッド ---
