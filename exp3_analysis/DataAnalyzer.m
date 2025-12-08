@@ -176,6 +176,8 @@ classdef DataAnalyzer < handle
                 options.Property (1,1) string = "GRI"
                 options.Amp      (1,1) double {mustBeNumeric} = 1.0
                 options.Mode     (1,1) string {mustBeMember(options.Mode, ["H", "HM", "HS", "HMS"])} = "H"
+                options.MatNum (1,1) double {mustBeNumeric} = 4
+                options.ShapeNum (1,1) double {mustBeNumeric} = 6
             end
             
             fprintf('HeatMapの作成を開始します...\n');
@@ -189,6 +191,16 @@ classdef DataAnalyzer < handle
             % 描画オプションを構造体にまとめる
             plotOptions = options;
             plotOptions.Title = sprintf('Heatmap - %s about %s', plotDataA.Name, plotOptions.Property);
+            if options.MatNum == 4
+                plotOptions.MatNames = obj.MatNames3;
+            elseif options.MatNum == 2
+                plotOptions.MatNames = obj.MatNames5;
+            end
+            if options.ShapeNum == 6
+                plotOptions.ShapeNames = obj.ShapeNames;
+            elseif options.ShapeNum == 3
+                plotOptions.ShapeNames = obj.ShapeNames5;
+            end
 
             % --- 2. 統合されたヘルパー関数を呼び出す ---
             obj.generateHeatmap(plotDataA,plotOptions);
@@ -723,9 +735,9 @@ classdef DataAnalyzer < handle
                     fprintf('H,HMSは使えません');                    
                 case {"HM", "HS"}
                     if plotOptions.Mode == "HM"
-                        labels = obj.MatNames3;
+                        labels = plotOptions.MatNames;
                     else % "HS"
-                        labels = obj.ShapeNames;
+                        labels = plotOptions.ShapeNames;
                     end
                    
                     createHeatmap(plotData,"Labels",labels,"Title",plotOptions.Title,"Amp",plotOptions.Amp);
