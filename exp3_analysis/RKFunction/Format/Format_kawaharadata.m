@@ -99,7 +99,9 @@ error_H = calculateSE(Row_HMSPT,1,[2,3,4,5]);
 %---------------------------------------
 % (bunny,15HDR,Material)
 %---------------------------------------
-Row_HMPT_30_bny = squeeze(Row_HMSPT(:,:,2,:,:));
+sz = size(Row_HMSPT(:,:,2,:,:), 1:5); 
+sz(3) = []; 
+Row_HMPT_30_bny = reshape(Row_HMSPT(:,:,2,:,:), sz);
 
 % be 15 data
 Row_HMPT_15_bny = zeros(15,num_Materials,num_Participants,5);

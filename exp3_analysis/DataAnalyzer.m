@@ -19,6 +19,7 @@ classdef DataAnalyzer < handle
         MatNames2 = {'cu_0.025', 'cu_0.129', 'pla_0.075', 'pla_0.225'};
         MatNames3 = {'cu-0.025', 'cu-0.129', 'pla-0.075', 'pla-0.225'};
         MatNames5 = {'cu-0.025','pla-0.075'};
+        MatNames6 = {'pla-0.075'};
         
         HDRNames_15 = [19, 39, 78, 80, 102, 125, 152, 203, 226, 227, 230, 232, 243, 278, 281];
         HDRNames_30 = [5,19,34,39,42,43,78,80,102,105,125,152,164,183,198,201,202,203,209,222,226,227,230,232,243,259,272,278,281,282];
@@ -27,6 +28,7 @@ classdef DataAnalyzer < handle
         
         ShapeNames = {'sphere','bunny','dragon','boardA','boardB','boardC'};
         ShapeNames5 = {'bunny','boardA','boardC'};
+        ShapeNames6 = {'bunny','boardA'};
         
         ParticipantsNames_Exp3 = {'Jiang','Nakajima','ODA','Satou','ishiguro','kawahara'},
     end
@@ -543,6 +545,111 @@ classdef DataAnalyzer < handle
             fprintf('被験者SD解析(比較)が完了しました。\n');
         end
 
+        %% 被験者内の標準偏差の検定
+        function SubjectSDTest(obj, dataSpecA, dataSpecB, options)
+            % ■ 入力:
+            %   dataSpecA, dataSpecB: 比較する2つのデータセット
+            %   options: Mode ('H', 'HM', 'HS', 'HMS')
+            
+            arguments
+                obj
+                dataSpecA (1,1) struct {mustHaveFields(dataSpecA, ["SetName", "TargetData"])}
+                dataSpecB (1,1) struct {mustHaveFields(dataSpecB, ["SetName", "TargetData"])}
+                options.Mode     (1,1) string {mustBeMember(options.Mode, ["H", "HM", "HS", "HMS"])} = "H"
+            end
+            
+            fprintf('被験者SD検定(t-test)を開始します...\n');
+            
+            % --- 1. データの準備 ---
+            dataA = obj.getDataFromSet(dataSpecA.SetName, dataSpecA.TargetData);
+            dataB = obj.getDataFromSet(dataSpecB.SetName, dataSpecB.TargetData);
+            
+            % --- 2. 共通の条件（材質・形状）を抽出してデータをアライメント ---
+            [matNamesA, shapeNamesA] = obj.selectNamesFromDataSize(dataA, [], "HMS");
+            [matNamesB, shapeNamesB] = obj.selectNamesFromDataSize(dataB, [], "HMS");
+            
+            [commonMatNames, iA_mat, iB_mat] = intersect(matNamesA, matNamesB, 'stable');
+            [commonShapeNames, iA_shape, iB_shape] = intersect(shapeNamesA, shapeNamesB, 'stable');
+            
+            % 警告・情報表示
+            if isempty(commonMatNames)
+                warning('共通の材質条件が見つかりませんでした。');
+            elseif length(commonMatNames) < length(matNamesA) || length(commonMatNames) < length(matNamesB)
+                fprintf('  -> 共通の材質条件にデータを制限します: %s\n', strjoin(commonMatNames, ', '));
+            end
+             
+            if isempty(commonShapeNames)
+                warning('共通の形状条件が見つかりませんでした。');
+            elseif length(commonShapeNames) < length(shapeNamesA) || length(commonShapeNames) < length(shapeNamesB)
+                fprintf('  -> 共通の形状条件にデータを制限します: %s\n', strjoin(commonShapeNames, ', '));
+            end
+            
+            % フィルタリング
+            if ndims(dataA) >= 3
+                dataA = dataA(:, iA_mat, iA_shape, :, :);
+            end
+            if ndims(dataB) >= 3
+                dataB = dataB(:, iB_mat, iB_shape, :, :);
+            end
+            
+            % --- 3. 外部関数呼び出し ---
+            plotOptions.Mode = options.Mode;
+            plotOptions.MatNames = commonMatNames; % プロットタイトルに使うため
+            plotOptions.ShapeNames = commonShapeNames;
+            plotOptions.HDRNum = obj.HDRNum_30;    % X軸ラベル用
+            plotOptions.ResultDir = obj.ResultDir; % 結果保存用
+            
+            performSubjectSDTest(dataA, dataB, dataSpecA.SetName, dataSpecB.SetName, plotOptions);
+            
+            fprintf('被験者SD検定が完了しました。\n');
+        end
+
+        function SubjectSDUnpairedTest(obj, dataSpecA, dataSpecB, options)
+            % SubjectSDUnpairedTest - 被験者間標準偏差（個人差）の有意差検定（対応なし、U検定）
+            % Modeは "H" (材質・形状平均) を基本とする
+            
+            arguments
+                obj
+                dataSpecA struct
+                dataSpecB struct
+                options.Mode (1,1) string = "H" % デフォルトはH
+            end
+            
+            fprintf('被験者SD対応なし検定（U検定）を開始します...\n');
+            
+            % --- 1. データの準備 ---
+            rawDataA = obj.getDataFromSet(dataSpecA.SetName, dataSpecA.TargetData);
+            rawDataB = obj.getDataFromSet(dataSpecB.SetName, dataSpecB.TargetData);
+            
+            % --- 2. 共通条件の抽出とアライメント ---
+            % selectNamesFromDataSize を使用して名前リストを取得
+            % Unpairedでも照明条件などは合わせる必要がある
+            [matNamesA, shapeNamesA] = obj.selectNamesFromDataSize(rawDataA, "HMS");
+            [matNamesB, shapeNamesB] = obj.selectNamesFromDataSize(rawDataB, "HMS");
+            
+            commonMatNames = intersect(matNamesA, matNamesB, 'stable');
+            commonShapeNames = intersect(shapeNamesA, shapeNamesB, 'stable');
+            
+            % 共通部分のインデックス特定
+            [~, matIdxA] = ismember(commonMatNames, matNamesA);
+            [~, shapeIdxA] = ismember(commonShapeNames, shapeNamesA);
+            [~, matIdxB] = ismember(commonMatNames, matNamesB);
+            [~, shapeIdxB] = ismember(commonShapeNames, shapeNamesB);
+            
+            % データ抽出 [H, M, S, P, T]
+            dataA = rawDataA(:, matIdxA, shapeIdxA, :, :);
+            dataB = rawDataB(:, matIdxB, shapeIdxB, :, :);
+            
+            % --- 3. 外部関数呼び出し ---
+            plotOptions.Mode = options.Mode;
+            plotOptions.HDRNum = obj.HDRNum_30;    % X軸ラベル用
+            plotOptions.ResultDir = obj.ResultDir; % 結果保存用
+            
+            performSubjectSDUnpairedTest(dataA, dataB, dataSpecA.SetName, dataSpecB.SetName, plotOptions);
+            
+            fprintf('被験者SD対応なし検定が完了しました。\n');
+        end
+
     end
     
     % --- 内部ヘルパーメソッド ---
@@ -636,8 +743,10 @@ classdef DataAnalyzer < handle
                     layoutConfig.cols = 2;
                     if matNum == 4
                         layoutConfig.labels = obj.MatNames3;
-                    else
+                    elseif matNum == 2
                         layoutConfig.labels = obj.MatNames5;
+                    else
+                        layoutConfig.labels = obj.MatNames6;
                     end
                     layoutConfig.loopCount = matNum;
                     
@@ -646,8 +755,10 @@ classdef DataAnalyzer < handle
                     layoutConfig.cols = 3;
                     if shapeNum == 6
                         layoutConfig.labels = obj.ShapeNames;
-                    else
+                    elseif shapeNum == 3
                         layoutConfig.labels = obj.ShapeNames5;
+                    else
+                        layoutConfig.labels = obj.ShapeNames6;
                     end
                     layoutConfig.loopCount = shapeNum;
                     
@@ -862,6 +973,8 @@ classdef DataAnalyzer < handle
                             matNames = obj.MatNames3;
                         case 2
                             matNames = obj.MatNames5;
+                        case 1
+                            matNames = obj.MatNames6;
                         otherwise
                             matNames = obj.MatNames3;
                     end
@@ -875,6 +988,8 @@ classdef DataAnalyzer < handle
                             shapeNames = obj.ShapeNames;
                         case 3
                             shapeNames = obj.ShapeNames5;
+                        case 2
+                            shapeNames = obj.ShapeNames6;
                         otherwise
                             shapeNames = obj.ShapeNames;
                     end
@@ -886,6 +1001,8 @@ classdef DataAnalyzer < handle
                             matNames = obj.MatNames3;
                         case 2
                             matNames = obj.MatNames5;
+                        case 1
+                            matNames = obj.MatNames6;
                         otherwise
                             matNames = obj.MatNames3;
                     end
@@ -894,6 +1011,8 @@ classdef DataAnalyzer < handle
                             shapeNames = obj.ShapeNames;
                         case 3
                             shapeNames = obj.ShapeNames5;
+                        case 2
+                            shapeNames = obj.ShapeNames6;
                         otherwise
                             shapeNames = obj.ShapeNames;
                     end
