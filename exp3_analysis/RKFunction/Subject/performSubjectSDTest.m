@@ -14,8 +14,9 @@ function performSubjectSDTest(dataA, dataB, nameA, nameB, plotOptions)
     fprintf('比較対象: %s vs %s\n', nameA, nameB);
 
     % 1. SDデータの計算 (calculateSubjectSD.m)
-    sdA = calculateSubjectSD(dataA, mode);
-    sdB = calculateSubjectSD(dataB, mode);
+    % isPooled=true: 非対象次元を平均せず標本として扱う
+    sdA = calculateSubjectSD(dataA, mode, true);
+    sdB = calculateSubjectSD(dataB, mode, true);
     
     % 2. 対数変換 (log SD)
     logSDA = log(sdA);
@@ -126,19 +127,26 @@ function plotTestResult(tValues, pValues, H, HDRNum, Amp, titleStr, nameA, nameB
     
     hold on;
     
-    % 有意差がある箇所を赤色に変更 (p < 0.05)
-    sigIndices = find(pValues < 0.05);
-    if ~isempty(sigIndices)
-        b.CData(sigIndices, :) = repmat([1, 0, 0], length(sigIndices), 1); % 赤
+    % 有意差がある箇所を赤色に変更 (p < 0.05, 0.01, 0.001)
+    for i = 1:length(pValues)
+        p = pValues(i);
+        if p < 0.001
+            b.CData(i, :) = [0.4, 0, 0];   % Darkest Red
+        elseif p < 0.01
+            b.CData(i, :) = [0.7, 0, 0];   % Dark Red
+        elseif p < 0.05
+            b.CData(i, :) = [1, 0, 0];     % Red
+        end
     end
     
     % 基準線 (t=0)
     yline(0, 'k-', 'LineWidth', 1);
     
-    % クリティカルラインはおおよそ t=2.04 (df=29, p=0.05) で計算していたが、
-    % 条件によって欠損値でdfが変わる場合があり、青線を超えても有意でないケース（グレー）が
-    % 発生してミスリードになるため削除。
-    % 有意差はバーの色（赤）でのみ表現する。
+    % 凡例
+    h1 = plot(nan, nan, 's', 'MarkerFaceColor', [1, 0, 0], 'MarkerEdgeColor', 'none');
+    h2 = plot(nan, nan, 's', 'MarkerFaceColor', [0.7, 0, 0], 'MarkerEdgeColor', 'none');
+    h3 = plot(nan, nan, 's', 'MarkerFaceColor', [0.4, 0, 0], 'MarkerEdgeColor', 'none');
+    legend([h1, h2, h3], {'p < 0.05', 'p < 0.01', 'p < 0.001'}, 'Location', 'bestoutside');
     
     hold off;
     

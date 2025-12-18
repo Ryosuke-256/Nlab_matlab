@@ -21,6 +21,8 @@ arguments
     options.Amp double = 1.0
     options.ResultDir string = ""
     options.SubNames (1,:) string = []
+    options.XLabel string = "Illumination Index"
+    options.XTickLabels (1,:) string = []
 end
 
 %% 1. データの整合性チェック
@@ -30,14 +32,9 @@ end
 
 %% 2. データの前処理
 % データ形式は [H, M, S, P, T] を想定
-% ユーザー要望により、試行(Dim5)を平均せず、被験者(Dim4)と統合し、
-% [H, M, S, P*T] という形にしてサンプル数を増やす。
-
 szA = size(rawDataA);
 szB = size(rawDataB);
 
-% Dim4とDim5を統合して最後の次元にする
-% reshape用に次元サイズ計算
 H=szA(1); M=szA(2); S=szA(3); P=szA(4); T=szA(5);
 numTotalSamples = P * T;
 
@@ -45,58 +42,81 @@ numTotalSamples = P * T;
 sampleDataA = reshape(rawDataA, H, M, S, numTotalSamples);
 sampleDataB = reshape(rawDataB, H, M, S, numTotalSamples);
 
-% Modeに応じた整形: [H, NumSubConds, NumSamples] に中身を統一する
-% H次元(dim1)は常に30個の要素として維持し、横軸に使用する。
+% Modeに応じた整形
+% Modeに応じた整形
+% ユーザー要望により、ターゲット以外の次元は平均せず、全て標本(Samples)の次元に統合する。
+% これによりサンプル数が大幅に増える。
 
 switch options.Mode
     case "H"
-        % [H, M, S, Samples] -> [H, Samples] (M, S 平均)
-        % Dim2(M)とDim3(S)を平均化して潰す
-        % mean(..., 2) -> [H, 1, S, Samples] -> mean(..., 3) -> [H, 1, 1, Samples]
-        tmpA = squeeze(mean(mean(sampleDataA, 3, 'omitnan'), 2, 'omitnan')); % [H, Samples]
-        tmpB = squeeze(mean(mean(sampleDataB, 3, 'omitnan'), 2, 'omitnan')); 
+        % [H, M, S, Samples] -> [H, M*S*Samples]
+        % M, S をサンプル次元に統合
         
-        % [H, 1, Samples] に変形
+        procDataA = reshape(sampleDataA, H, 1, []);
+        procDataB = reshape(sampleDataB, H, 1, []);
+        
         numSubConds = 1;
-        procDataA = reshape(tmpA, size(tmpA, 1), 1, []);
-        procDataB = reshape(tmpB, size(tmpB, 1), 1, []);
-        
         if isempty(options.SubNames), subNames = "All"; else, subNames = options.SubNames; end
 
     case "HM"
-        % [H, M, S, Samples] -> [H, M, Samples] (S 平均)
-        tmpA = squeeze(mean(sampleDataA, 3, 'omitnan')); % [H, M, Samples]
-        tmpB = squeeze(mean(sampleDataB, 3, 'omitnan'));
+        % [H, M, S, Samples] -> [H, M, S*Samples]
+        % S をサンプル次元に統合
         
-        % [H, M, Samples]
-        procDataA = tmpA;
-        procDataB = tmpB;
+        procDataA = reshape(sampleDataA, H, M, []);
+        procDataB = reshape(sampleDataB, H, M, []);
+        
         numSubConds = size(procDataA, 2);
         subNames = options.SubNames;
 
     case "HS"
-        % [H, M, S, Samples] -> [H, S, Samples] (M 平均)
-        tmpA = mean(sampleDataA, 2, 'omitnan'); % [H, 1, S, Samples]
-        tmpB = mean(sampleDataB, 2, 'omitnan');
+        % [H, M, S, Samples] -> [H, S, M*Samples]
+        % M をサンプル次元に統合するため、まず次元を入れ替える
+        % [H, S, M, Samples]
+        tmpA = permute(sampleDataA, [1, 3, 2, 4]);
+        tmpB = permute(sampleDataB, [1, 3, 2, 4]);
         
-        % [H, S, Samples] にsqueeze
-        tmpA = squeeze(tmpA); 
-        tmpB = squeeze(tmpB);
+        procDataA = reshape(tmpA, H, S, []);
+        procDataB = reshape(tmpB, H, S, []);
         
-        procDataA = tmpA;
-        procDataB = tmpB;
         numSubConds = size(procDataA, 2);
         subNames = options.SubNames;
 
     case "HMS"
-        % [H, M, S, Samples]
-        % [H, M*S, Samples] に変形
+        % [H, M, S, Samples] -> [H, M*S, Samples]
+        % 統合する非対象次元はないが、M*Sを条件次元として展開する
         
-        procDataA = reshape(sampleDataA, H, M*S, numTotalSamples);
-        procDataB = reshape(sampleDataB, H, M*S, numTotalSamples);
+        procDataA = reshape(sampleDataA, H, M*S, []);
+        procDataB = reshape(sampleDataB, H, M*S, []);
         
         numSubConds = M*S;
         subNames = options.SubNames;
+        
+    case "Total"
+        % [H, M, S, Samples] -> [1, H*M*S*Samples]
+        % H, M, S 全てをサンプル次元に統合
+        
+        procDataA = reshape(sampleDataA, 1, 1, []);
+        procDataB = reshape(sampleDataB, 1, 1, []);
+        
+        numSubConds = 1;
+        if isempty(options.SubNames), subNames = "Total"; else, subNames = options.SubNames; end
+        
+        if options.XLabel == "Illumination Index", options.XLabel = "Total"; end
+
+    case "S"
+        % [H, M, S, Samples] -> [S, H*M*Samples]
+        % 横軸をSにする。H, M をサンプル次元に統合。
+        % 次元順序を [S, H, M, Samples] に変更
+        tmpA = permute(sampleDataA, [3, 1, 2, 4]);
+        tmpB = permute(sampleDataB, [3, 1, 2, 4]);
+        
+        procDataA = reshape(tmpA, S, 1, []);
+        procDataB = reshape(tmpB, S, 1, []);
+        
+        numSubConds = 1;
+        if isempty(options.SubNames), subNames = "Shape"; else, subNames = options.SubNames; end
+        
+        if options.XLabel == "Illumination Index", options.XLabel = "Shape Index"; end
         
     otherwise
         error('Unsupported Mode: %s', options.Mode);
@@ -104,7 +124,6 @@ end
 
 % SubNamesの数チェック
 if length(subNames) ~= numSubConds
-    % 数が合わない場合はダミー生成
     warning('SubNames count (%d) does not match data dimension (%d). Generating dummy names.', length(subNames), numSubConds);
     subNames = "Cond" + (1:numSubConds);
 end
@@ -116,9 +135,6 @@ H_dim = size(procDataA, 1);
 for k = 1:numSubConds
     currentName = subNames(k);
     
-    % [H, P] スライスを抽出
-    % squeezeで [H, P] になるはずだが、P=1の場合など注意。
-    % reshapeで確実に [H, P] にする
     sliceA = reshape(procDataA(:, k, :), H_dim, numSubjects);
     sliceB = reshape(procDataB(:, k, :), H_dim, numSubjects);
     
@@ -134,7 +150,6 @@ for k = 1:numSubConds
         valA = sliceA(i, :)';
         valB = sliceB(i, :)';
         
-        % 差がない場合はt=0, p=1
         if std(valA-valB) == 0
             tValues(i) = 0;
             pValues(i) = 1;
@@ -145,11 +160,10 @@ for k = 1:numSubConds
             tValues(i) = stats.tstat;
         end
         
-        % 有意性マーク
         sigMark = "";
         if pValues(i) < 0.001, sigMark = "***";
-        elseif pValues(i) < 0.005, sigMark = "**";
-        elseif pValues(i) < 0.01, sigMark = "*";
+        elseif pValues(i) < 0.01, sigMark = "**";
+        elseif pValues(i) < 0.05, sigMark = "*";
         end
         
         fprintf('%3d | %9.4f | %9.4f | %s\n', i, tValues(i), pValues(i), sigMark);
@@ -175,15 +189,14 @@ function plotRawDataTtestResult(tValues, pValues, nameA, nameB, options, numSubj
     for i = 1:length(pValues)
         p = pValues(i);
         if p < 0.001
-            b.CData(i, :) = [0.4, 0, 0];   % Darkest Red
-        elseif p < 0.005
-            b.CData(i, :) = [0.7, 0, 0];   % Dark Red
+            b.CData(i, :) = [0.4, 0, 0];   
         elseif p < 0.01
-            b.CData(i, :) = [1, 0, 0];     % Red
+            b.CData(i, :) = [0.7, 0, 0];   
+        elseif p < 0.05
+            b.CData(i, :) = [1, 0, 0];     
         end
     end
 
-    % 基準線
     yline(0, 'k-', 'LineWidth', 1);
     
     % 臨界値
@@ -196,8 +209,15 @@ function plotRawDataTtestResult(tValues, pValues, nameA, nameB, options, numSubj
 
     title(sprintf('%s vs %s\nMode: %s, Cond: %s', nameA, nameB, options.Mode, subName), 'Interpreter', 'none');
     ylabel('t-value');
-    xlabel('Illumination Index');
+    xlabel(options.XLabel);
     xlim([0.5, length(tValues)+0.5]);
+    
+    % XTickLabelsの設定
+    if ~isempty(options.XTickLabels)
+        xticks(1:length(tValues));
+        xticklabels(options.XTickLabels);
+    end
+    
     grid on;
     box on;
     
@@ -205,13 +225,12 @@ function plotRawDataTtestResult(tValues, pValues, nameA, nameB, options, numSubj
     h1 = plot(nan, nan, 's', 'MarkerFaceColor', [1, 0, 0], 'MarkerEdgeColor', 'none');
     h2 = plot(nan, nan, 's', 'MarkerFaceColor', [0.7, 0, 0], 'MarkerEdgeColor', 'none');
     h3 = plot(nan, nan, 's', 'MarkerFaceColor', [0.4, 0, 0], 'MarkerEdgeColor', 'none');
-    legend([h1, h2, h3], {'p < 0.01', 'p < 0.005', 'p < 0.001'}, 'Location', 'bestoutside');
+    legend([h1, h2, h3], {'p < 0.05', 'p < 0.01', 'p < 0.001'}, 'Location', 'bestoutside');
     
     hold off;
     
     % 結果保存
     if options.ResultDir ~= ""
-        % ファイル名にSubNameを含める
         saveFileName = sprintf("RawDataTtest_%s_vs_%s_%s_%s.png", nameA, nameB, options.Mode, subName);
         saveas(fig, fullfile(options.ResultDir, saveFileName));
         fprintf('Saved t-test plot: %s\n', saveFileName);

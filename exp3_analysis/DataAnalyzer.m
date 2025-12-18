@@ -367,34 +367,44 @@ classdef DataAnalyzer < handle
             % Modeに応じて適切な名前リストを作成
             subNames = [];
             
-            % selectNamesFromDataSizeは、モードに応じた次元配置(HSならDim2=Shape)を期待する
-            % しかし生データは [H, M, S, P, T] なので、HSモードの時は次元が合わない
-            if options.Mode == "HS"
-                % [H, S] のダミーデータを作成して渡す
-                H_size = size(rawDataA, 1);
-                S_size = size(rawDataA, 3); % Dim3 is Shape
-                dummyData = zeros(H_size, S_size);
-                [matNames, shapeNames] = obj.selectNamesFromDataSize(dummyData, [], options.Mode);
+            if options.Mode == "Total"
+                subNames = "Total";
+                % Totalモードでは個別の名前取得は不要
             else
-                % HM, HMSなどはRawDataの次元順(Dim2=Mat)と一致、あるいは互換性があるためそのままでOK
-                [matNames, shapeNames] = obj.selectNamesFromDataSize(rawDataA, [], options.Mode);
-            end
-            
-            switch options.Mode
-                case "H"
-                    subNames = "All";
-                case "HM"
-                    subNames = matNames;
-                case "HS"
-                    subNames = shapeNames;
-                case "HMS"
-                    % MとSの組み合わせ名を作成 (Mat_Shape)
-                    subNames = string.empty();
-                    for m = 1:length(matNames)
-                        for s = 1:length(shapeNames)
-                            subNames(end+1) = matNames(m) + "_" + shapeNames(s); %#ok<AGROW>
+                % selectNamesFromDataSizeは、モードに応じた次元配置(HSならDim2=Shape)を期待する
+                % しかし生データは [H, M, S, P, T] なので、HSモードの時は次元が合わない
+                % Mode="S" の時も、形状名を取得したいので同様の処理を行う
+                if options.Mode == "HS" || options.Mode == "S"
+                    % [H, S] のダミーデータを作成して渡す
+                    H_size = size(rawDataA, 1);
+                    S_size = size(rawDataA, 3);
+                    dummyData = zeros(H_size, S_size);
+                    % Mode="HS"として呼び出し、Dim2から形状名を取得させる
+                    [matNames, shapeNames] = obj.selectNamesFromDataSize(dummyData, [], "HS");
+                else
+                    % HM, HMSなどはRawDataの次元順(Dim2=Mat)と一致、あるいは互換性があるためそのままでOK
+                    [matNames, shapeNames] = obj.selectNamesFromDataSize(rawDataA, [], options.Mode);
+                end
+                
+                switch options.Mode
+                    case "H"
+                        subNames = "All";
+                    case "HM"
+                        subNames = matNames;
+                    case "HS"
+                        subNames = shapeNames;
+                    case "HMS"
+                        % MとSの組み合わせ名を作成 (Mat_Shape)
+                        subNames = string.empty();
+                        for m = 1:length(matNames)
+                            for s = 1:length(shapeNames)
+                                subNames(end+1) = matNames(m) + "_" + shapeNames(s); %#ok<AGROW>
+                            end
                         end
-                    end
+                    case "S"
+                        % 形状比較 (1枚のプロット)
+                        subNames = "All";
+                end
             end
             
             % --- 3. 外部関数呼び出し ---
@@ -402,11 +412,18 @@ classdef DataAnalyzer < handle
             nameA = string(dataSpecA.SetName);
             nameB = string(dataSpecB.SetName);
             
+            % x軸ラベルの設定 (Sモード用)
+            xTickLabels = [];
+            if options.Mode == "S"
+                xTickLabels = shapeNames;
+            end
+            
             performRawDataTtest(rawDataA, rawDataB, nameA, nameB, ...
                 'Mode', options.Mode, ...
                 'Amp', options.Amp, ...
                 'SubNames', subNames, ...
-                'ResultDir', obj.ResultDir);
+                'ResultDir', obj.ResultDir, ...
+                'XTickLabels', xTickLabels);
             
             fprintf('分析が完了しました。\n');
         end
