@@ -31,6 +31,8 @@ classdef DataAnalyzer < handle
         ShapeNames6 = {'bunny','boardA'};
         
         ParticipantsNames_Exp3 = {'Jiang','Nakajima','ODA','Satou','ishiguro','kawahara'},
+        ParticipantsNames_Exp5 = {'ishiguro','kinoshita','miura','miyoshi','nakajima','oda'},
+        ParticipantsNames_Exp6 = {'kinoshita','miura','oda'},
     end
     
     %======================================================================
@@ -293,6 +295,120 @@ classdef DataAnalyzer < handle
             obj.generateANOVAPlot(plotDataA,plotDataB, plotOptions);
 
             fprintf('ANOVAが完了しました。\n');
+        end
+        
+        function SubjectANOVA(obj, dataSpecA, dataSpecB, options)
+            % SubjectANOVA - 完全反復測定分散分析 (Fully Repeated Measures ANOVA)
+            % DataAとDataBが同一被験者である場合に、その差を新しい要因として検定します。
+            
+            arguments
+                obj
+                dataSpecA struct
+                dataSpecB struct
+                options.ConditionName (1,1) string = "Condition"
+                options.ConditionLevels (1,2) string = ["A", "B"]
+                options.FactorNames (1,:) string = ["Illumination", "Material", "Shape"]
+            end
+            
+            fprintf('完全反復測定分散分析 (Within-Subject ANOVA) を開始します...\n');
+            
+            % --- 1. データの準備 ---
+            % [H, M, S, P, T]
+            rawDataA = obj.getDataFromSet(dataSpecA.SetName, dataSpecA.TargetData);
+            rawDataB = obj.getDataFromSet(dataSpecB.SetName, dataSpecB.TargetData);
+            
+            % --- 2. データの整合性チェック ---
+            if ~isequal(size(rawDataA), size(rawDataB))
+                error('DataAとDataBのサイズが一致しません。完全反復測定には同一サイズのデータが必要です。');
+            end
+            
+            % --- 3. 外部関数呼び出し ---
+            % ConditionLevelsのデフォルトが["A", "B"]なら、セット名を使うのもあり
+            if isequal(options.ConditionLevels, ["A", "B"])
+                condLevels = [string(dataSpecA.SetName), string(dataSpecB.SetName)];
+            else
+                condLevels = options.ConditionLevels;
+            end
+            
+            performWithinSubjectAnova(rawDataA, rawDataB, ...
+                'FactorNames', options.FactorNames, ...
+                'ConditionName', options.ConditionName, ...
+                'ConditionLevels', condLevels, ...
+                'DataNames', [string(dataSpecA.SetName), string(dataSpecB.SetName)], ...
+                'ResultDir', obj.ResultDir);
+            
+            fprintf('分析が完了しました。\n');
+        end
+        
+        function RawDataTtest(obj, dataSpecA, dataSpecB, options)
+            % RawDataTtest - 生データ(試行平均)に対する対応のあるt検定
+            %
+            % [INPUTS]
+            %   dataSpecA, dataSpecB - データ仕様構造体
+            %   options.Mode - 解析モード ("H", "HM" etc)
+            %   options.Amp  - フォントサイズ倍率
+            
+            arguments
+                obj
+                dataSpecA struct
+                dataSpecB struct
+                options.Mode string = "H"
+                options.Amp double = 1.0
+            end
+            
+            fprintf('生データ対応t検定 (RawDataTtest) を開始します (Mode: %s)...\n', options.Mode);
+            
+            % --- 1. データの取得 ---
+            % [H, M, S, P, T]
+            rawDataA = obj.getDataFromSet(dataSpecA.SetName, dataSpecA.TargetData);
+            rawDataB = obj.getDataFromSet(dataSpecB.SetName, dataSpecB.TargetData);
+            
+            % --- 2. 条件名の取得 ---
+            % Modeに応じて適切な名前リストを作成
+            subNames = [];
+            
+            % selectNamesFromDataSizeは、モードに応じた次元配置(HSならDim2=Shape)を期待する
+            % しかし生データは [H, M, S, P, T] なので、HSモードの時は次元が合わない
+            if options.Mode == "HS"
+                % [H, S] のダミーデータを作成して渡す
+                H_size = size(rawDataA, 1);
+                S_size = size(rawDataA, 3); % Dim3 is Shape
+                dummyData = zeros(H_size, S_size);
+                [matNames, shapeNames] = obj.selectNamesFromDataSize(dummyData, [], options.Mode);
+            else
+                % HM, HMSなどはRawDataの次元順(Dim2=Mat)と一致、あるいは互換性があるためそのままでOK
+                [matNames, shapeNames] = obj.selectNamesFromDataSize(rawDataA, [], options.Mode);
+            end
+            
+            switch options.Mode
+                case "H"
+                    subNames = "All";
+                case "HM"
+                    subNames = matNames;
+                case "HS"
+                    subNames = shapeNames;
+                case "HMS"
+                    % MとSの組み合わせ名を作成 (Mat_Shape)
+                    subNames = string.empty();
+                    for m = 1:length(matNames)
+                        for s = 1:length(shapeNames)
+                            subNames(end+1) = matNames(m) + "_" + shapeNames(s); %#ok<AGROW>
+                        end
+                    end
+            end
+            
+            % --- 3. 外部関数呼び出し ---
+            % 名前はSetNameを使用
+            nameA = string(dataSpecA.SetName);
+            nameB = string(dataSpecB.SetName);
+            
+            performRawDataTtest(rawDataA, rawDataB, nameA, nameB, ...
+                'Mode', options.Mode, ...
+                'Amp', options.Amp, ...
+                'SubNames', subNames, ...
+                'ResultDir', obj.ResultDir);
+            
+            fprintf('分析が完了しました。\n');
         end
         
         %% 相関係数のノイズ天井検定のBootstrap        

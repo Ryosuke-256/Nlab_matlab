@@ -10,7 +10,8 @@ function createSingleResidualPlot(residuals, dataSpec1, dataSpec2, options, HDRN
 %   selectNamesFromDataSize: 名前選択関数ハンドル
 
 try
-    fig = figure('Visible', 'off');
+    % 図のサイズを横長に設定 (縦:横 = 1:4)
+    fig = figure('Visible', 'off', 'Position', [100, 100, 1200, 300]);
     hold on;
     
     % 2次元目でループして、同一グラフにプロット
@@ -25,31 +26,31 @@ try
     % モードに応じて凡例とタイトルを設定
     switch options.Mode
         case "H"
-            legend('Location', 'best', 'FontSize', 3*options.Amp);
+            legend('Location', 'bestoutside', 'FontSize', 3*options.Amp);
             titleKind = 'All';
         case "HM"
             [matNames, ~] = selectNamesFromDataSize(residuals, [], options.Mode);
-            legend(matNames, 'Location', 'best', 'Interpreter', 'none', 'FontSize', 3*options.Amp);
+            legend(matNames, 'Location', 'bestoutside', 'Interpreter', 'none', 'FontSize', 8*options.Amp);
             titleKind = 'Material';
         case "HS"
             [~, shapeNames] = selectNamesFromDataSize(residuals, [], options.Mode);
-            legend(shapeNames, 'Location', 'best', 'Interpreter', 'none', 'FontSize', 3*options.Amp);
+            legend(shapeNames, 'Location', 'bestoutside', 'Interpreter', 'none', 'FontSize', 8*options.Amp);
             titleKind = 'Shape';
         case "HMS"
             titleKind = 'HMS';
     end
-
-    titleStr = sprintf('%s vs %s about %s\\nResiduals_%s', dataSpec1.SetName, dataSpec2.SetName, options.Property, titleKind);
-    title(titleStr, 'Interpreter', 'none', 'FontSize', 12*options.Amp);
-    xlabel('Illumination', 'Interpreter', 'none', 'FontSize', 12*options.Amp);
-    ylabel('Residuals', 'Interpreter', 'none', 'FontSize', 12*options.Amp);
-    grid on; box on; axis tight;
     
     x = 1:length(HDRNum_30);
     set(gca, 'XTick', x);
     xticklabels(HDRNum_30);
     xtickangle(90);
     set(gca, 'FontSize', 6 * options.Amp);
+    
+    titleStr = sprintf('%s vs %s about %s_Residuals_%s', dataSpec1.SetName, dataSpec2.SetName, options.Property, titleKind);
+    title(titleStr, 'Interpreter', 'none', 'FontSize', 8*options.Amp);
+    xlabel('Illumination', 'Interpreter', 'none', 'FontSize', 10*options.Amp);
+    ylabel('Residuals', 'Interpreter', 'none', 'FontSize', 10*options.Amp);
+    grid on; box on; axis tight;
     
     ymax = max(abs(residuals), [], 'all') * 1.1;
     ylim([-ymax ymax]);
