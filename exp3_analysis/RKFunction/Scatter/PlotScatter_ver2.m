@@ -12,7 +12,7 @@ function [outlier_indices] = PlotScatter_ver2(x, y, options)
         options.HDRNo (:,:) double {mustBeVector} = []
         options.XLabel (1,1) string = "X"
         options.YLabel (1,1) string = "Y"
-        options.Title (1,1) string = "title"
+        options.Title (1,1) string = ""
         options.Amp (1,1) double = 1
     end
     

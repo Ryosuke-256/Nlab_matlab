@@ -783,6 +783,42 @@ classdef DataAnalyzer < handle
             fprintf('被験者SD対応なし検定が完了しました。\n');
         end
 
+        %% MDSクラスタリング
+        function MDSClustering(obj, dataSpec, options)
+            % MDSClustering - MDSを用いたクラスタリングと可視化を行います。
+            % (材質×形状)の各条件を、照明に対する応答ベクトルとして扱い、
+            % ピアソン相関距離に基づいてMDS配置とクラスタリングを行います。
+            %
+            % 入力:
+            %   dataSpec : データセット仕様 (.SetName, .TargetData)
+            %   options  : オプション構造体
+            
+            arguments
+                obj
+                dataSpec (1,1) struct {mustHaveFields(dataSpec, ["SetName", "TargetData"])}
+                options.Mode (1,1) string {mustBeMember(options.Mode, ["H", "HM", "HS", "HMS"])} = "HMS"
+                options.Amp  (1,1) double = 1.0
+            end
+            
+            fprintf('MDSクラスタリングを開始します (%s)...\n', dataSpec.SetName);
+            
+            % --- 1. データの準備 ---
+            rawData = obj.getDataFromSet(dataSpec.SetName, dataSpec.TargetData);
+            dataName = dataSpec.SetName;
+            
+            % --- 2. 名前リストの取得 ---
+            [matNames, shapeNames] = obj.selectNamesFromDataSize(rawData, [], options.Mode);
+            
+            % --- 3. 外部関数呼び出し ---
+            plotOptions.ResultDir = obj.ResultDir;
+            plotOptions.Amp = options.Amp;
+            
+            % RKFunction/Cluster/performMDSClustering.m を呼び出す
+            performMDSClustering(rawData, dataName, matNames, shapeNames, plotOptions);
+            
+            fprintf('MDSクラスタリングが完了しました。\n');
+        end
+
     end
     
     % --- 内部ヘルパーメソッド ---
@@ -1315,10 +1351,11 @@ classdef DataAnalyzer < handle
                 % モードに応じてプロット
                 switch plotOptions.Mode
                     case "H"
-                        obj.plotScatterSingle(plotData, plotOptions, plotOptions.Title);
+                        %sgtitle(tLayout, plotOptions.Title, 'Interpreter', 'none');
+                        obj.plotScatterSingle(plotData, plotOptions);
                         
                     case {"HM", "HS"}
-                        sgtitle(tLayout, plotOptions.Title, 'Interpreter', 'none');
+                        %sgtitle(tLayout, plotOptions.Title, 'Interpreter', 'none');
                         for i = 1:layoutConfig.loopCount
                             nexttile;
                             titleStr = sprintf('%s', string(layoutConfig.labels(i)));
@@ -1327,7 +1364,7 @@ classdef DataAnalyzer < handle
                         
                     case "HMS"
                         titleStr = sprintf('%s-%s', plotOptions.Title, string(plotOptions.MatNames(mat_idx)));
-                        sgtitle(tLayout, titleStr, 'Interpreter', 'none');
+                        %sgtitle(tLayout, titleStr, 'Interpreter', 'none');
                         
                         for shape = 1:layoutConfig.loopCount
                             nexttile;

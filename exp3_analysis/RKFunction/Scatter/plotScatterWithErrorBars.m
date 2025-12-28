@@ -69,7 +69,7 @@ errorbar(ax, 1:num_conditions, medians, negative_errors, positive_errors, ...
 %% 4. グラフの体裁調整
 % (以降のコードは変更なし)
 grid(ax, 'on');
-title(ax, options.Title, 'FontSize', 16 * options.Amp, 'Interpreter', 'none');
+%title(ax, options.Title, 'FontSize', 16 * options.Amp, 'Interpreter', 'none');
 xlabel(ax, options.XLabel, 'FontSize', 12 * options.Amp);
 ylabel(ax, options.YLabel, 'FontSize', 12 * options.Amp);
 xlim(ax, [0, num_conditions + 1]);

@@ -40,7 +40,7 @@ function [] = PlotHistgram_ver1(plotDataA,plotDataB,options)
 
     xlabel(options.XLabel,'FontSize',14*options.Amp); 
     ylabel(options.YLabel,'FontSize',14*options.Amp);
-    title(options.Title,'FontSize',12*options.Amp);
+    %title(options.Title,'FontSize',12*options.Amp);
     legend([bar_1, bar_2], 'Location', 'southeast','Orientation','vertical', 'Box', 'on');
     %legend('boxoff');
     
