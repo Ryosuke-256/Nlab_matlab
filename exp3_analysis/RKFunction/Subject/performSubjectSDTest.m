@@ -10,6 +10,12 @@ function performSubjectSDTest(dataA, dataB, nameA, nameB, plotOptions)
     Amp = 1.0;
     if isfield(plotOptions, 'Amp'), Amp = plotOptions.Amp; end
     
+    % ShowTitleオプションのデフォルト設定
+    if ~isfield(plotOptions, 'ShowTitle')
+        plotOptions.ShowTitle = true;
+    end
+    showTitle = plotOptions.ShowTitle;
+    
     fprintf('--- 被験者間SDの統計検定 (Mode: %s) ---\n', mode);
     fprintf('比較対象: %s vs %s\n', nameA, nameB);
 
@@ -46,7 +52,7 @@ function performSubjectSDTest(dataA, dataB, nameA, nameB, plotOptions)
             end
             
             titleStr = "All Conditions";
-            plotTestResult(tValues, pValues, H, HDRNum, Amp, titleStr, nameA, nameB, mode, plotOptions, numSubjects);
+            plotTestResult(tValues, pValues, H, HDRNum, Amp, titleStr, nameA, nameB, mode, plotOptions, numSubjects, showTitle);
             
         case "HM"
             % Data: [H, M, P]
@@ -65,7 +71,7 @@ function performSubjectSDTest(dataA, dataB, nameA, nameB, plotOptions)
                 end
                 
                 titleStr = sprintf("Material: %s", matName);
-                plotTestResult(tValues, pValues, H, HDRNum, Amp, titleStr, nameA, nameB, mode + "_" + matName, plotOptions, numSubjects);
+                plotTestResult(tValues, pValues, H, HDRNum, Amp, titleStr, nameA, nameB, mode + "_" + matName, plotOptions, numSubjects, showTitle);
             end
             
         case "HS"
@@ -85,7 +91,7 @@ function performSubjectSDTest(dataA, dataB, nameA, nameB, plotOptions)
                 end
                 
                 titleStr = sprintf("Shape: %s", shapeName);
-                plotTestResult(tValues, pValues, H, HDRNum, Amp, titleStr, nameA, nameB, mode + "_" + shapeName, plotOptions, numSubjects);
+                plotTestResult(tValues, pValues, H, HDRNum, Amp, titleStr, nameA, nameB, mode + "_" + shapeName, plotOptions, numSubjects, showTitle);
             end
             
         case "HMS"
@@ -109,7 +115,7 @@ function performSubjectSDTest(dataA, dataB, nameA, nameB, plotOptions)
                     
                     titleStr = sprintf("Mat:%s, Shape:%s", matName, shapeName);
                     suffix = mode + "_" + matName + "_" + shapeName;
-                    plotTestResult(tValues, pValues, H, HDRNum, Amp, titleStr, nameA, nameB, suffix, plotOptions, numSubjects);
+                    plotTestResult(tValues, pValues, H, HDRNum, Amp, titleStr, nameA, nameB, suffix, plotOptions, numSubjects, showTitle);
                 end
             end
     end
@@ -117,7 +123,7 @@ function performSubjectSDTest(dataA, dataB, nameA, nameB, plotOptions)
     fprintf('----------------------------------------\n\n');
 end
 
-function plotTestResult(tValues, pValues, H, HDRNum, Amp, titleStr, nameA, nameB, suffix, plotOptions, numSubjects)
+function plotTestResult(tValues, pValues, H, HDRNum, Amp, titleStr, nameA, nameB, suffix, plotOptions, numSubjects, showTitle)
     % t値のプロット作成
     fig = figure('Visible', 'on'); % 確認用に表示
     
@@ -154,8 +160,10 @@ function plotTestResult(tValues, pValues, H, HDRNum, Amp, titleStr, nameA, nameB
     box on;
     
     % タイトルと軸ラベル
-    titleVal = sprintf('Paired t-test (logSD): %s\n%s vs %s', titleStr, nameA, nameB);
-    title(titleVal, 'Interpreter', 'none', 'FontSize', 12 * Amp);
+    if showTitle
+        titleVal = sprintf('Paired t-test (logSD): %s\n%s vs %s', titleStr, nameA, nameB);
+        title(titleVal, 'Interpreter', 'none', 'FontSize', 12 * Amp);
+    end
     ylabel('t-value', 'FontSize', 10 * Amp);
     xlabel('Illumination', 'FontSize', 10 * Amp);
     

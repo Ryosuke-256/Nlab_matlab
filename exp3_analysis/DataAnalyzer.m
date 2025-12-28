@@ -173,6 +173,7 @@ classdef DataAnalyzer < handle
                 options.HdrSet   (1,1) string {mustBeMember(options.HdrSet, ["HDRNum_15", "HDRNum_30"])} = "HDRNum_30"
                 options.Amp      (1,1) double {mustBeNumeric} = 1.0
                 options.Mode     (1,1) string {mustBeMember(options.Mode, ["H", "HM", "HS", "HMS"])} = "H"
+                options.ShowTitle (1,1) logical = true
             end
 
             fprintf('散布図の作成を開始します...\n');
@@ -188,12 +189,17 @@ classdef DataAnalyzer < handle
             plotDataB.Name = dataSpecB.SetName;
 
             % 描画オプションを構造体にまとめる
+            % 描画オプションを構造体にまとめる
             plotOptions = options;
+            plotOptions.NameA = plotDataA.Name;
+            plotOptions.NameB = plotDataB.Name;
             plotOptions.hdr = obj.(options.HdrSet);
             plotOptions.Title = sprintf('%s vs %s about %s', plotDataA.Name, plotDataB.Name, plotOptions.Property);
+            plotOptions.ResultDir = obj.ResultDir;
+            [plotOptions.MatNames, plotOptions.ShapeNames] = obj.selectNamesFromDataSize(plotDataA.target, plotDataB.target, plotOptions.Mode);
 
             % --- 2. 統合されたヘルパー関数を呼び出す ---
-            obj.generateHistgramCompare(plotDataA,plotDataB, plotOptions);
+            performHistgramCompare(plotDataA,plotDataB, plotOptions);
 
             fprintf('プロットの作成が完了しました。\n');
         end
@@ -227,6 +233,8 @@ classdef DataAnalyzer < handle
                 options.PreDim   (1,1) double {mustBeNumeric} = 1
                 options.Mode     (1,1) string {mustBeMember(options.Mode, ["H", "HM", "HS", "HMS"])} = "H"
                 options.Residual (1,1) string {mustBeMember(options.Residual, ["regression", "outlier"])} = "regression"
+                options.ShowTitle (1,1) logical = true
+                options.TitleLocation (1,1) string {mustBeMember(options.TitleLocation, ["top", "bottom"])} = "top"
             end
 
             fprintf('散布図の作成を開始します...\n');
@@ -247,9 +255,53 @@ classdef DataAnalyzer < handle
             [plotOptions.MatNames, plotOptions.ShapeNames] = obj.selectNamesFromDataSize(plotData.targetA, plotData.targetB, plotOptions.Mode);
 
             % --- 2. 統合されたヘルパー関数を呼び出す ---
-            obj.generateScatterPlot(plotData, plotOptions);
+            plotOptions.ResultDir = obj.ResultDir;
+            plotOptions.hdr = obj.(options.HdrSet);
+            performScatterPlot(plotData.targetA, plotData.targetB, plotOptions);
 
             fprintf('プロットの作成が完了しました。\n');
+        end
+        
+        %% --- 散布図 (個別保存) ---
+        function plotScatterSeparated(obj, dataSpecA, dataSpecB, options)            
+            % plotScatterSeparated - 散布図を条件ごとに個別のファイルとして保存します
+            %   (plotScatterとほぼ同じ引数を取ります)
+            arguments
+                obj
+                dataSpecA (1,1) struct {mustHaveFields(dataSpecA, ["SetName", "TargetData", "ErrorData"])}
+                dataSpecB (1,1) struct {mustHaveFields(dataSpecB, ["SetName", "TargetData", "ErrorData"])}
+                options.Property (1,1) string = "GRI"
+                options.HdrSet   (1,1) string {mustBeMember(options.HdrSet, ["HDRNum_15", "HDRNum_30"])} = "HDRNum_30"
+                options.Amp      (1,1) double {mustBeNumeric} = 1.0
+                options.PreDim   (1,1) double {mustBeNumeric} = 1
+                options.Mode     (1,1) string {mustBeMember(options.Mode, ["H", "HM", "HS", "HMS"])} = "H"
+                options.Residual (1,1) string {mustBeMember(options.Residual, ["regression", "outlier"])} = "regression"
+                options.ShowTitle (1,1) logical = true
+                options.TitleLocation (1,1) string {mustBeMember(options.TitleLocation, ["top", "bottom"])} = "top"
+            end
+
+            fprintf('散布図(個別)の作成を開始します...\n');
+
+            % --- 1. データの準備 ---
+            plotData.targetA = obj.getDataFromSet(dataSpecA.SetName, dataSpecA.TargetData);
+            plotData.errorA  = obj.getDataFromSet(dataSpecA.SetName, dataSpecA.ErrorData);
+            plotData.targetB = obj.getDataFromSet(dataSpecB.SetName, dataSpecB.TargetData);
+            plotData.errorB  = obj.getDataFromSet(dataSpecB.SetName, dataSpecB.ErrorData);
+            plotData.hdr     = obj.(options.HdrSet);
+
+            % 描画オプションを構造体にまとめる
+            plotOptions = options;
+            plotOptions.NameA = dataSpecA.SetName;
+            plotOptions.NameB = dataSpecB.SetName;
+            plotOptions.Title = sprintf('%s vs %s about %s', plotOptions.NameA, plotOptions.NameB, plotOptions.Property);
+            [plotOptions.MatNames, plotOptions.ShapeNames] = obj.selectNamesFromDataSize(plotData.targetA, plotData.targetB, plotOptions.Mode);
+
+            % --- 2. 個別保存用のヘルパー関数を呼び出す ---
+            plotOptions.ResultDir = obj.ResultDir;
+            plotOptions.hdr = obj.(options.HdrSet);
+            performScatterPlotSeparated(plotData.targetA, plotData.targetB, plotOptions);
+
+            fprintf('プロット(個別)の作成が完了しました。\n');
         end
         
         %% --ANOVA--
@@ -590,6 +642,7 @@ classdef DataAnalyzer < handle
                 options.Property (1,1) string = "GRI"
                 options.Amp      (1,1) double {mustBeNumeric} = 1.0
                 options.Mode     (1,1) string {mustBeMember(options.Mode, ["H", "HM", "HS", "HMS"])} = "H"
+                options.ShowTitle (1,1) logical = true
             end
             
             fprintf('被験者SD解析(Single)を開始します...\n');
@@ -622,6 +675,7 @@ classdef DataAnalyzer < handle
                 options.Property (1,1) string = "GRI"
                 options.Amp      (1,1) double {mustBeNumeric} = 1.0
                 options.Mode     (1,1) string {mustBeMember(options.Mode, ["H", "HM", "HS", "HMS"])} = "H"
+                options.ShowTitle (1,1) logical = true
             end
             
             fprintf('被験者SD解析(Compare)を開始します...\n');
@@ -689,6 +743,7 @@ classdef DataAnalyzer < handle
                 dataSpecA (1,1) struct {mustHaveFields(dataSpecA, ["SetName", "TargetData"])}
                 dataSpecB (1,1) struct {mustHaveFields(dataSpecB, ["SetName", "TargetData"])}
                 options.Mode     (1,1) string {mustBeMember(options.Mode, ["H", "HM", "HS", "HMS"])} = "H"
+                options.ShowTitle (1,1) logical = true
             end
             
             fprintf('被験者SD検定(t-test)を開始します...\n');
@@ -731,6 +786,7 @@ classdef DataAnalyzer < handle
             plotOptions.ShapeNames = commonShapeNames;
             plotOptions.HDRNum = obj.HDRNum_30;    % X軸ラベル用
             plotOptions.ResultDir = obj.ResultDir; % 結果保存用
+            plotOptions.ShowTitle = options.ShowTitle;
             
             performSubjectSDTest(dataA, dataB, dataSpecA.SetName, dataSpecB.SetName, plotOptions);
             
@@ -798,6 +854,7 @@ classdef DataAnalyzer < handle
                 dataSpec (1,1) struct {mustHaveFields(dataSpec, ["SetName", "TargetData"])}
                 options.Mode (1,1) string {mustBeMember(options.Mode, ["H", "HM", "HS", "HMS"])} = "HMS"
                 options.Amp  (1,1) double = 1.0
+                options.ShowTitle (1,1) logical = true
             end
             
             fprintf('MDSクラスタリングを開始します (%s)...\n', dataSpec.SetName);
@@ -812,6 +869,7 @@ classdef DataAnalyzer < handle
             % --- 3. 外部関数呼び出し ---
             plotOptions.ResultDir = obj.ResultDir;
             plotOptions.Amp = options.Amp;
+            plotOptions.ShowTitle = options.ShowTitle;
             
             % RKFunction/Cluster/performMDSClustering.m を呼び出す
             performMDSClustering(rawData, dataName, matNames, shapeNames, plotOptions);
@@ -1208,87 +1266,7 @@ classdef DataAnalyzer < handle
         end
         
         %% --- 単純ヒストグラム ---
-        function generateHistgramCompare(obj, plotDataA,plotDataB, plotOptions)
-            % HMSモードはFigureを複数作成するため、特別に処理
-            if plotOptions.Mode == "HMS"
-                for mat = 1:size(plotDataA.targetA, 2)
-                    obj.drawAndSaveHistgramCompare(plotDataA,plotDataB, plotOptions, mat);
-                end
-            else
-                % H, HM, HSモードは単一のFigureを作成
-                obj.drawAndSaveHistgramCompare(plotDataA,plotDataB, plotOptions);
-            end
-        end
-        
-        function drawAndSaveHistgramCompare(obj, plotDataA,plotDataB, plotOptions, mat_idx)
-            if nargin < 5
-                mat_idx = []; % HMSモードでない場合は空
-            end
 
-            try
-                % モードに応じた材質数と形状数を取得
-                [matCount, shapeCount] = obj.getMatShapeCount(plotDataA.target, plotOptions.Mode);
-                
-                % レイアウト設定を取得
-                layoutConfig = obj.configurePlotLayout(plotOptions.Mode, matCount, shapeCount);
-                
-                % Figure とレイアウトを作成
-                [fig, tLayout] = obj.createFigureWithLayout(plotOptions.Mode, matCount, shapeCount);
-
-                % モードに応じてプロット
-                switch plotOptions.Mode
-                    case "H"
-                        obj.plotHistgramSingle(plotDataA, plotDataB, plotOptions, plotOptions.Title);
-                        
-                    case {"HM", "HS"}
-                        sgtitle(tLayout, plotOptions.Title, 'Interpreter', 'none');
-                        for i = 1:layoutConfig.loopCount
-                            nexttile;
-                            titleStr = sprintf('%s', string(layoutConfig.labels(i)));
-                            obj.plotHistgramSingle(plotDataA, plotDataB, plotOptions, titleStr, i);
-                        end
-                        
-                    case "HMS"
-                        titleStr = sprintf('%s-%s', plotOptions.Title, string(obj.MatNames3(mat_idx)));
-                        sgtitle(tLayout, titleStr, 'Interpreter', 'none');
-                        
-                        for shape = 1:layoutConfig.loopCount
-                            nexttile;
-                            titleStr = sprintf('%s', string(obj.ShapeNames(shape)));
-                            obj.plotHistgramSingle(plotDataA, plotDataB, plotOptions, titleStr, mat_idx, shape);
-                        end
-                end
-
-                % 保存 (ヒストグラムは特殊な命名規則を使用)
-                filename_suffix = plotOptions.Mode;
-                if plotOptions.Mode == "HMS"
-                    filename_suffix = "HMS_" + string(obj.MatNames3(mat_idx));
-                end
-                plotFileName = sprintf('%s vs %s_%s_%s_Histgram.jpg', plotDataA.Name, plotDataB.Name, plotOptions.Property, filename_suffix);
-                plotFullPath = fullfile(obj.ResultDir, plotFileName);
-                saveas(fig, plotFullPath);
-                close(fig);
-                fprintf('  -> Histgramを保存しました\n');
-
-            catch ME
-                if exist('fig', 'var') && isvalid(fig)
-                    close(fig);
-                end
-                rethrow(ME);
-            end
-        end
-        
-        % 単一のヒストグラムをプロット
-        function plotHistgramSingle(obj, plotDataA, plotDataB, plotOptions, titleStr, matIdx, shapeIdx)
-            % ラッパーメソッド: 外部関数を呼び出す
-            if nargin < 6
-                plotHistgramSingle(plotDataA, plotDataB, plotOptions, titleStr);
-            elseif nargin < 7
-                plotHistgramSingle(plotDataA, plotDataB, plotOptions, titleStr, matIdx);
-            else
-                plotHistgramSingle(plotDataA, plotDataB, plotOptions, titleStr, matIdx, shapeIdx);
-            end
-        end
         
         %% ---Heatmap---
         function generateHeatmap(obj,plotData,plotOptions)
@@ -1319,84 +1297,7 @@ classdef DataAnalyzer < handle
 
         end
         
-        %% --- 散布図  ---
-        function generateScatterPlot(obj, plotData, plotOptions)
-            % HMSモードはFigureを複数作成するため、特別に処理
-            if plotOptions.Mode == "HMS"
-                for mat = 1:size(plotData.targetA, 2)
-                    obj.drawAndSavePlot(plotData, plotOptions, mat);
-                end
-            else
-                % H, HM, HSモードは単一のFigureを作成
-                obj.drawAndSavePlot(plotData, plotOptions);
-            end
-        end
 
-        % --- 実際の描画と保存を行うヘルパー関数 ---
-        function drawAndSavePlot(obj, plotData, plotOptions, mat_idx)
-            if nargin < 4
-                mat_idx = []; % HMSモードでない場合は空
-            end
-
-            try
-                % モードに応じた材質数と形状数を取得
-                [matCount, shapeCount] = obj.getMatShapeCount(plotData.targetA, plotOptions.Mode);
-                
-                % レイアウト設定を取得
-                layoutConfig = obj.configurePlotLayout(plotOptions.Mode, matCount, shapeCount);
-                
-                % Figure とレイアウトを作成
-                [fig, tLayout] = obj.createFigureWithLayout(plotOptions.Mode, matCount, shapeCount);
-
-                % モードに応じてプロット
-                switch plotOptions.Mode
-                    case "H"
-                        %sgtitle(tLayout, plotOptions.Title, 'Interpreter', 'none');
-                        obj.plotScatterSingle(plotData, plotOptions);
-                        
-                    case {"HM", "HS"}
-                        %sgtitle(tLayout, plotOptions.Title, 'Interpreter', 'none');
-                        for i = 1:layoutConfig.loopCount
-                            nexttile;
-                            titleStr = sprintf('%s', string(layoutConfig.labels(i)));
-                            obj.plotScatterSingle(plotData, plotOptions, titleStr, i);
-                        end
-                        
-                    case "HMS"
-                        titleStr = sprintf('%s-%s', plotOptions.Title, string(plotOptions.MatNames(mat_idx)));
-                        %sgtitle(tLayout, titleStr, 'Interpreter', 'none');
-                        
-                        for shape = 1:layoutConfig.loopCount
-                            nexttile;
-                            titleStr = sprintf('%s', string(plotOptions.ShapeNames(shape)));
-                            obj.plotScatterSingle(plotData, plotOptions, titleStr, mat_idx, shape);
-                        end
-                end
-
-                % 保存
-                obj.saveFigureWithNaming(fig, plotOptions.NameA, plotOptions.NameB, ...
-                    plotOptions.Property, plotOptions.Mode, mat_idx, 'scatter');
-
-            catch ME
-                if exist('fig', 'var') && isvalid(fig)
-                    close(fig);
-                end
-                rethrow(ME);
-            end
-        end
-        
-        % 単一の散布図をプロット
-        function plotScatterSingle(obj, plotData, plotOptions, titleStr, matIdx, shapeIdx)
-            % ラッパーメソッド: 外部関数を呼び出す
-            if nargin < 5
-                plotScatterSingle(plotData, plotOptions, titleStr);
-            elseif nargin < 6
-                plotScatterSingle(plotData, plotOptions, titleStr, matIdx);
-            else
-                plotScatterSingle(plotData, plotOptions, titleStr, matIdx, shapeIdx);
-            end
-        end
-        
         %% ANOVA
         function generateANOVAPlot(obj,plotDataA,plotDataB,plotOptions)
             dataA = plotDataA.target;

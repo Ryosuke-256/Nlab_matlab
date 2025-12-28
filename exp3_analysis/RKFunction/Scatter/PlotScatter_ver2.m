@@ -14,6 +14,7 @@ function [outlier_indices] = PlotScatter_ver2(x, y, options)
         options.YLabel (1,1) string = "Y"
         options.Title (1,1) string = ""
         options.Amp (1,1) double = 1
+        options.TitleLocation (1,1) string {mustBeMember(options.TitleLocation, ["top", "bottom"])} = "top"
     end
     
     % --- 2. 統計モデルの構築 (一元化) ---
@@ -88,9 +89,21 @@ function [outlier_indices] = PlotScatter_ver2(x, y, options)
     set(gca,'FontSize',8 * options.Amp);
 
     % --- 9. 最後の仕上げ ---
-    xlabel(options.XLabel, 'FontSize', 10*options.Amp, 'Interpreter', 'none');
+    if options.TitleLocation == "top"
+        xlabel(options.XLabel, 'FontSize', 10*options.Amp, 'Interpreter', 'none');
+        title(options.Title, 'FontSize', 12*options.Amp, 'Interpreter', 'none');
+    else
+        % bottom: タイトルをX軸ラベルの下に追加
+        if options.Title ~= ""
+            combinedLabel = {options.XLabel, options.Title};
+        else
+            combinedLabel = options.XLabel;
+        end
+        xlabel(combinedLabel, 'FontSize', 10*options.Amp, 'Interpreter', 'none');
+        % titleは表示しない
+    end
+
     ylabel(options.YLabel, 'FontSize', 10*options.Amp, 'Interpreter', 'none');
-    title(options.Title, 'FontSize', 12*options.Amp, 'Interpreter', 'none');
     grid on;
     box on;
     axis square;

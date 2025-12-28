@@ -156,7 +156,13 @@ function performMDSClustering(rawData, dataSetName, matNames, shapeNames, option
             'FontSize', 5 * options.Amp, 'Interpreter', 'none', 'Color', [0.2 0.2 0.2]);
     end
     
-    title(sprintf('MDS Clustering: %s (k=%d)', dataSetName, optimalK), 'Interpreter', 'none', 'FontSize', 14 * options.Amp);
+    if ~isfield(options, 'ShowTitle')
+        options.ShowTitle = true;
+    end
+    
+    if options.ShowTitle
+        title(sprintf('MDS Clustering: %s (k=%d)', dataSetName, optimalK), 'Interpreter', 'none', 'FontSize', 14 * options.Amp);
+    end
     xlabel('Dimension 1', 'FontSize', 12 * options.Amp);
     ylabel('Dimension 2', 'FontSize', 12 * options.Amp);
     grid on;
