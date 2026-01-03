@@ -10,16 +10,23 @@ function plotBootstrapHMHS(fig, dataA, dataB, plotDataA, plotDataB, plotOptions,
 %   shapeNames: 形状名の配列
 
 % データの準備
+% データの準備
 if plotOptions.Mode == "HS"
     dataA_r = permute(dataA, [1, 3, 2, 4, 5]);
     dataB_r = permute(dataB, [1, 3, 2, 4, 5]);
     labels = shapeNames;
-    sgTitle = sprintf("%s vs %s - %s- shape", plotDataA.Name, plotDataB.Name, plotOptions.Property);
+    defaultTitle = sprintf("%s vs %s - %s- shape", plotDataA.Name, plotDataB.Name, plotOptions.Property);
 else % HM モード
     dataA_r = dataA;
     dataB_r = dataB;
     labels = matNames;
-    sgTitle = sprintf("%s vs %s - %s- material", plotDataA.Name, plotDataB.Name, plotOptions.Property);
+    defaultTitle = sprintf("%s vs %s - %s- material", plotDataA.Name, plotDataB.Name, plotOptions.Property);
+end
+
+if isfield(plotOptions, 'ShowTitle') && ~plotOptions.ShowTitle
+    sgTitle = "";
+else
+    sgTitle = defaultTitle;
 end
 
 % グラフ初期化

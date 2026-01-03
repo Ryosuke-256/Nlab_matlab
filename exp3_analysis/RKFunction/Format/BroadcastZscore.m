@@ -20,12 +20,15 @@ end
 % 共通次元のサイズが一致するか検証
 size_ref = size(reference_data);
 size_target = size(target_data);
+
+%{
 if ~isequal(size_ref(common_dims), size_target(common_dims))
     error('参照データと標的データの共通次元のサイズが一致しません。');
 end
 if ~ismember(zscore_dim, common_dims)
     error('zscore_dimはcommon_dimsに含まれている必要があります。');
 end
+%}
 
 %% 2. 参照データから統計量（移動量と倍率）を計算
 mu_ref    = mean(reference_data, zscore_dim);

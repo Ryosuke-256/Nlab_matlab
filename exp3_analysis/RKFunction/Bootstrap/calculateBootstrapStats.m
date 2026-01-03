@@ -1,4 +1,4 @@
-function [ceiling_distAA, ceiling_distAB, p_value, observed_corr, bc_ci_AA, bc_ci_AB] = Corr_Significance_v4(dataA, dataB, num_bootstrap, num_splits)
+function [ceiling_distAA, ceiling_distAB, p_value, observed_corr, bc_ci_AA, bc_ci_AB] = calculateBootstrapStats(dataA, dataB, num_bootstrap, num_splits)
     %{
     ○出力 (BC信頼区間を追加)
     ・bc_ci_AA: ceiling_distAAのBC法による95%信頼区間
@@ -13,16 +13,22 @@ function [ceiling_distAA, ceiling_distAB, p_value, observed_corr, bc_ci_AA, bc_c
         num_splits (1,1) double = 100
     end
 
-    %% 2. 次元の自動認識 (変更なし)
-    num_dims = ndims(dataA);
+    %% 2. 次元の自動認識 (Corr_Significance_v4の挙動に戻す)
+    num_dims = ndims(dataA); % リサンプリング等の基準用（元ロジック維持）
+    
+    % 平均化の範囲を決めるために、大きい方の次元数（試行次元が含まれる方）を取得
+    calc_dims = max(ndims(dataA), ndims(dataB));
+
     subject_dim = num_dims - 1;
     trial_dim = num_dims;
+    
     num_subjects_A = size(dataA, subject_dim);
     num_subjects_B = size(dataB, subject_dim);
     
     %% 3. 元データの相関係数（観測値）を計算
-    pattern_vec_A = mean(dataA, 2:num_dims);
-    pattern_vec_B = mean(dataB, 2:num_dims);
+    % squeezeを追加して次元エラーを回避し、かつ両方に共通する最大次元まで平均化する
+    pattern_vec_A = squeeze(mean(dataA, 2:calc_dims));
+    pattern_vec_B = squeeze(mean(dataB, 2:calc_dims));
     observed_corr = corr(pattern_vec_A, pattern_vec_B);
     
     [pattern1_A_orig, pattern2_A_orig] = createPatternVectors(dataA, trial_dim);
@@ -82,6 +88,7 @@ function [ceiling_distAA, ceiling_distAB, p_value, observed_corr, bc_ci_AA, bc_c
     fprintf('Noise Ceiling (AA) のBC法95%%信頼区間: [%.4f, %.4f]\n', bc_ci_AA(1), bc_ci_AA(2));
     fprintf('相関 (AB) のBC法95%%信頼区間:         [%.4f, %.4f]\n', bc_ci_AB(1), bc_ci_AB(2));
     fprintf('p値 (観測相関がNoise Ceiling以下である確率): %.4f\n', p_value);
+
 end
 
 %% ========== ヘルパー関数群 ==========
@@ -92,12 +99,12 @@ function [vector1, vector2] = createPatternVectors(data, trial_dim)
     % 1回目の試行リサンプリング
     resampled_data1 = resampleDimension(data, trial_dim);
     % Zスコア化 -> 平均化
-    vector1 = mean(resampled_data1, 2:ndims(resampled_data1));
+    vector1 = squeeze(mean(resampled_data1, 2:ndims(resampled_data1)));
     
     % 2回目の試行リサンプリング
     resampled_data2 = resampleDimension(data, trial_dim);
     % Zスコア化 -> 平均化
-    vector2 = mean(resampled_data2, 2:ndims(resampled_data2));
+    vector2 = squeeze(mean(resampled_data2, 2:ndims(resampled_data2)));
 end
 
 

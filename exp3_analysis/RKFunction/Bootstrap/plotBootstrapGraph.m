@@ -1,4 +1,4 @@
-function Graph_Significance_v2(ax, observed_corr, noise_ceiling_distAA, noise_ceiling_distAB, p_value, bca_ci_AB, repeater, options)
+function plotBootstrapGraph(ax, observed_corr, noise_ceiling_distAA, noise_ceiling_distAB, p_value, bca_ci_AB, repeater, options)
 %Graph_Significance_BCa BCa法による信頼区間をエラーバーとして描画します。
 
 %% 1. 引数の検証

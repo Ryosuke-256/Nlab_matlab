@@ -14,8 +14,13 @@ function plotBootstrapHMS(fig, dataA, dataB, plotDataA, plotDataB, plotOptions, 
 shapeCount = size(dataA, 3);
 
 % タイトル
-sgTitle = sprintf("%s vs %s - %s - %s", plotDataA.Name, plotDataB.Name, ...
-    plotOptions.Property, string(matNames(mat_idx)));
+% タイトル
+if isfield(plotOptions, 'ShowTitle') && ~plotOptions.ShowTitle
+    sgTitle = "";
+else
+    sgTitle = sprintf("%s vs %s - %s - %s", plotDataA.Name, plotDataB.Name, ...
+        plotOptions.Property, string(matNames(mat_idx)));
+end
 
 % グラフ初期化
 t_significance = tiledlayout(fig, 1, 1, 'Padding', 'normal');

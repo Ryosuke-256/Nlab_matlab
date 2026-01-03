@@ -505,6 +505,7 @@ classdef DataAnalyzer < handle
                 options.Mode (1,1) string {mustBeMember(options.Mode, ["H", "HM", "HS", "HMS"])} = "H"
                 options.Split     (1,1) double {mustBeInteger, mustBePositive} = 3
                 options.Distribution (1,1) logical = false
+                options.ShowTitle (1,1) logical = true
             end
 
             fprintf('相関係数のBootstrapを実行中 (Mode: %s)...\n', options.Mode);
@@ -519,8 +520,10 @@ classdef DataAnalyzer < handle
             plotDataA.Name = dataSpecA.SetName;
             plotDataB.Name = dataSpecB.SetName;
 
-            % --- 3. 統合された単一のヘルパー関数を呼び出す ---
-            obj.generateBootstrapPlot(plotDataA,plotDataB, plotOptions);
+            % --- 3. 外部関数に委譲 ---
+            plotOptions.ResultDir = obj.ResultDir;
+            performCorrelationBootstrap(plotDataA.target, plotDataB.target, plotDataA, plotDataB, ...
+                plotOptions, obj.MatNames3, obj.ShapeNames);
 
             fprintf('プロットの作成が完了しました。\n');
         end
@@ -579,6 +582,9 @@ classdef DataAnalyzer < handle
                 options.Amp      (1,1) double {mustBeNumeric} = 1.0
                 options.Save     (1,1) logical = true
                 options.Mode     (1,1) string {mustBeMember(options.Mode, ["H", "HM", "HS", "HMS"])} = "H"
+                options.ShowTitle (1,1) logical = true
+                options.TitleLocation (1,1) string {mustBeMember(options.TitleLocation, ["top", "bottom"])} = "top"
+                options.FigureSize (1,1) string {mustBeMember(options.FigureSize, ["normal", "slender"])} = "normal"
             end
 
             fprintf('残差プロットを作成しています...\n');
@@ -1338,72 +1344,13 @@ classdef DataAnalyzer < handle
             %     - "Amp"      (double): 増幅係数 (デフォルト: 1.5)
             %     - "Bootstrap"(double): Bootstrapの反復回数 (デフォルト: 10000)
             %     - "Mode"     (double): 1:H、2:HM、3:HS、4:HMS
-            
-            % HMSモードはFigureを複数作成するため、特別に処理
-            if plotOptions.Mode == "HMS"
-                for mat = 1:size(plotDataA.target, 2)
-                    obj.BootstrapPlot(plotDataA,plotDataB, plotOptions, mat);
-                end
-            else
-                % H, HM, HSモードは単一のFigureを作成
-                obj.BootstrapPlot(plotDataA,plotDataB, plotOptions);
-            end
-        end
-        
-        function BootstrapPlot(obj, plotDataA,plotDataB, plotOptions,mat_idx)
-            if nargin < 5
-                mat_idx = [];
-            end
-            
-            dataA = plotDataA.target;
-            dataB = plotDataB.target;
-            
-            try
-                % Figure を作成
-                fig_significance = figure('Visible', 'off');
-                
-                % モードに応じて Bootstrap 解析とプロット
-                switch plotOptions.Mode
-                    case "H"
-                        obj.plotBootstrapH(fig_significance, dataA, dataB, plotDataA, plotDataB, plotOptions);
-                        
-                    case {"HM", "HS"}
-                        obj.plotBootstrapHMHS(fig_significance, dataA, dataB, plotDataA, plotDataB, plotOptions);
-                        
-                    case "HMS"
-                        obj.plotBootstrapHMS(fig_significance, dataA, dataB, plotDataA, plotDataB, plotOptions, mat_idx);
-                end
-                
-                % 保存
-                obj.saveFigureWithNaming(fig_significance, plotDataA.Name, plotDataB.Name, ...
-                    plotOptions.Property, plotOptions.Mode, mat_idx, 'Significance');
-                
-                fprintf('  -> 各種グラフを保存しました\n');
 
-            catch ME
-                if exist('fig_significance', 'var') && isvalid(fig_significance)
-                    close(fig_significance);
-                end
-                rethrow(ME);
-            end
-        end
-        
-        % H モードの Bootstrap プロット
-        function plotBootstrapH(obj, fig, dataA, dataB, plotDataA, plotDataB, plotOptions)
-            % ラッパーメソッド: 外部関数を呼び出す
-            plotBootstrapH(fig, dataA, dataB, plotDataA, plotDataB, plotOptions);
-        end
-        
-        % HM/HS モードの Bootstrap プロット
-        function plotBootstrapHMHS(obj, fig, dataA, dataB, plotDataA, plotDataB, plotOptions)
-            % ラッパーメソッド: 外部関数を呼び出す
-            plotBootstrapHMHS(fig, dataA, dataB, plotDataA, plotDataB, plotOptions, obj.MatNames3, obj.ShapeNames);
-        end
-        
-        % HMS モードの Bootstrap プロット
-        function plotBootstrapHMS(obj, fig, dataA, dataB, plotDataA, plotDataB, plotOptions, mat_idx)
-            % ラッパーメソッド: 外部関数を呼び出す
-            plotBootstrapHMS(fig, dataA, dataB, plotDataA, plotDataB, plotOptions, mat_idx, obj.MatNames3, obj.ShapeNames);
+            % 結果ディレクトリの追加（performCorrelationBootstrapで保存に必要）
+            plotOptions.ResultDir = obj.ResultDir;
+            
+            % 外部関数に委譲
+            performCorrelationBootstrap(plotDataA.target, plotDataB.target, plotDataA, plotDataB, ...
+                plotOptions, obj.MatNames3, obj.ShapeNames);
         end
         
         % 有意性の注釈を追加

@@ -12,7 +12,12 @@ function plotBootstrapH(fig, dataA, dataB, plotDataA, plotDataB, plotOptions)
     Corr_Significance_v4(dataA, dataB, plotOptions.Bootstrap, plotOptions.Split);
 
 % タイトル
-sgTitle = sprintf("%s vs %s - %s- all condition", plotDataA.Name, plotDataB.Name, plotOptions.Property);
+% タイトル
+if isfield(plotOptions, 'ShowTitle') && ~plotOptions.ShowTitle
+    sgTitle = "";
+else
+    sgTitle = sprintf("%s vs %s - %s- all condition", plotDataA.Name, plotDataB.Name, plotOptions.Property);
+end
 
 % プロット
 t_significance = tiledlayout(fig, 1, 1, 'Padding', 'normal');

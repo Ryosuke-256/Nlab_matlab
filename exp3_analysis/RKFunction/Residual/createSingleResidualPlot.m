@@ -10,8 +10,19 @@ function createSingleResidualPlot(residuals, dataSpec1, dataSpec2, options, HDRN
 %   selectNamesFromDataSize: 名前選択関数ハンドル
 
 try
-    % 図のサイズを横長に設定 (縦:横 = 1:4)
-    fig = figure('Visible', 'off', 'Position', [100, 100, 1200, 300]);
+    % オプションデフォルト設定
+    if ~isfield(options, 'FigureSize'), options.FigureSize = "slender"; end
+    if ~isfield(options, 'ShowTitle'), options.ShowTitle = true; end
+    if ~isfield(options, 'TitleLocation'), options.TitleLocation = "top"; end
+
+    % 図のサイズ設定
+    if options.FigureSize == "slender"
+        figPos = [100, 100, 1200, 300]; % 横長
+    else
+        figPos = [100, 100, 1000, 600];  % 通常
+    end
+
+    fig = figure('Visible', 'off', 'Position', figPos);
     hold on;
     
     % 2次元目でループして、同一グラフにプロット
@@ -26,15 +37,15 @@ try
     % モードに応じて凡例とタイトルを設定
     switch options.Mode
         case "H"
-            legend('Location', 'bestoutside', 'FontSize', 3*options.Amp);
+            %legend('Location', 'bestoutside', 'FontSize', 5*options.Amp);
             titleKind = 'All';
         case "HM"
             [matNames, ~] = selectNamesFromDataSize(residuals, [], options.Mode);
-            legend(matNames, 'Location', 'bestoutside', 'Interpreter', 'none', 'FontSize', 8*options.Amp);
+            legend(matNames, 'Location', 'bestoutside', 'Interpreter', 'none', 'FontSize', 5*options.Amp);
             titleKind = 'Material';
         case "HS"
             [~, shapeNames] = selectNamesFromDataSize(residuals, [], options.Mode);
-            legend(shapeNames, 'Location', 'bestoutside', 'Interpreter', 'none', 'FontSize', 8*options.Amp);
+            legend(shapeNames, 'Location', 'bestoutside', 'Interpreter', 'none', 'FontSize', 5*options.Amp);
             titleKind = 'Shape';
         case "HMS"
             titleKind = 'HMS';
@@ -46,9 +57,27 @@ try
     xtickangle(90);
     set(gca, 'FontSize', 6 * options.Amp);
     
+    % タイトル生成
     titleStr = sprintf('%s vs %s about %s_Residuals_%s', dataSpec1.SetName, dataSpec2.SetName, options.Property, titleKind);
-    title(titleStr, 'Interpreter', 'none', 'FontSize', 8*options.Amp);
-    xlabel('Illumination', 'Interpreter', 'none', 'FontSize', 10*options.Amp);
+    
+    if ~options.ShowTitle
+        titleStr = "";
+    end
+
+    if options.TitleLocation == "top"
+        xlabel('Illumination', 'Interpreter', 'none', 'FontSize', 10*options.Amp);
+        if titleStr ~= ""
+            title(titleStr, 'Interpreter', 'none', 'FontSize', 8*options.Amp);
+        end
+    else
+        % bottom
+        if titleStr ~= ""
+            xlabel({'Illumination', titleStr}, 'Interpreter', 'none', 'FontSize', 10*options.Amp);
+        else
+            xlabel('Illumination', 'Interpreter', 'none', 'FontSize', 10*options.Amp);
+        end
+    end
+    
     ylabel('Residuals', 'Interpreter', 'none', 'FontSize', 10*options.Amp);
     grid on; box on; axis tight;
     
