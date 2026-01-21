@@ -93,4 +93,54 @@ groups{end} = [repmat("A", numel(dataA_reshaped), 1); repmat("B", numel(dataB_re
     'varnames', FactorNames, ...
     'display', 'on');
 
+% --- 効果量(Eta Squared, Partial Eta Squared)の計算 ---
+try
+    % ヘッダー行から列インデックスを取得
+    header = anova_table(1, :);
+    ss_col = find(strcmp(header, 'Sum Sq.'));
+    source_col = find(strcmp(header, 'Source'));
+    
+    if ~isempty(ss_col) && ~isempty(source_col)
+        % 行数
+        num_rows = size(anova_table, 1);
+        
+        % Error行とTotal行を探す
+        sources = anova_table(:, source_col);
+        error_row = find(strcmp(sources, 'Error'));
+        total_row = find(strcmp(sources, 'Total'));
+        
+        if ~isempty(error_row) && ~isempty(total_row)
+            SS_error = anova_table{error_row, ss_col};
+            SS_total = anova_table{total_row, ss_col};
+            
+            % 新しい列を追加
+            anova_table{1, end+1} = 'EtaSq';
+            anova_table{1, end+1} = 'PartialEtaSq';
+            
+            % 各行について計算 (ヘッダー除く, Error/Total除く)
+            for i = 2:num_rows
+                % ErrorやTotal行はスキップ
+                if i == error_row || i == total_row
+                    continue;
+                end
+                
+                SS_effect = anova_table{i, ss_col};
+                
+                % Eta Squared = SS_effect / SS_total
+                eta_sq = SS_effect / SS_total;
+                
+                % Partial Eta Squared = SS_effect / (SS_effect + SS_error)
+                partial_eta_sq = SS_effect / (SS_effect + SS_error);
+                
+                anova_table{i, end-1} = eta_sq;
+                anova_table{i, end} = partial_eta_sq;
+            end
+            
+            fprintf(' -> Eta Squared & Partial Eta Squared added to table.\n');
+        end
+    end
+catch ME
+    warning('効果量の計算に失敗しました: %s', ME.message);
+end
+
 end

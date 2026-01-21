@@ -126,6 +126,43 @@ ranova_table = ranova(rm_model, 'WithinModel', within_model_formula);
 fprintf('\n=== Fully Repeated Measures ANOVA Table ===\n');
 disp(ranova_table);
 
+% --- 効果量(Partial Eta Squared)の計算 ---
+try
+    % SumSq列を取得
+    SumSq = ranova_table.SumSq;
+    RowNames = ranova_table.Properties.RowNames;
+    
+    partial_eta_sq = nan(height(ranova_table), 1);
+    
+    % "Error"で始まる行を探す
+    error_indices = find(startsWith(RowNames, 'Error', 'IgnoreCase', true));
+    
+    last_error_idx = 0;
+    
+    for i = 1:numel(error_indices)
+        err_idx = error_indices(i);
+        
+        % Define the block of effects associated with this error term
+        block_start = last_error_idx + 1;
+        block_end = err_idx - 1;
+        
+        if block_end >= block_start
+            SS_error = SumSq(err_idx);
+            
+            for j = block_start:block_end
+                SS_effect = SumSq(j);
+                partial_eta_sq(j) = SS_effect / (SS_effect + SS_error);
+            end
+        end
+        
+        last_error_idx = err_idx;
+    end
+    
+    ranova_table.PartialEtaSq = partial_eta_sq;
+    fprintf(' -> Partial Eta Squared added to table.\n');
+catch ME
+    warning('効果量の計算に失敗しました: %s', ME.message);
+end
 %% 6. 結果保存 (CSV)
 if options.ResultDir ~= ""
     % ファイル名にデータ名を含める

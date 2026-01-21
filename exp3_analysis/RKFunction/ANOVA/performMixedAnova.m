@@ -29,7 +29,7 @@ arguments
     dataB {mustBeNumeric}
     options.FactorNames (1,:) string = []
     options.SubjectIDs (1,:) string = []
-    options.BetweenFactorName (1,1) string = []
+    options.BetweenFactorName (1,1) string = "Condition"
 end
 
 num_dims = ndims(dataA);
@@ -86,5 +86,51 @@ ranova_table = ranova(rm_model, 'WithinModel', within_model_formula);
 fprintf('\n--- Repeated Measures ANOVA Table ---\n');
 
 disp(ranova_table);
+
+% --- 効果量(Partial Eta Squared)の計算 ---
+try
+    % ranova_tableは、各要因の行と、それに対応する誤差(Error)の行ペアで構成されることが多いですが、
+    % MATLABのバージョンやモデル記述によっては Error(...) という行に分かれます。
+    % ここでは、「Error」を含む行名を誤差項として識別し、直前の行(または対応する項)の効果量を計算します。
+    
+    % SumSq列を取得
+    SumSq = ranova_table.SumSq;
+    RowNames = ranova_table.Properties.RowNames;
+    
+    partial_eta_sq = nan(height(ranova_table), 1);
+    
+    % "Error"で始まる行を探す
+    error_indices = find(startsWith(RowNames, 'Error', 'IgnoreCase', true));
+    
+    % Block-based approach:
+    % Table is assumed to be ordered as: [Effect1, Effect2, ..., Error1, Effect3, ..., Error2, ...]
+    % All rows between the previous Error row (or start) and the current Error row depend on the current Error row.
+    
+    last_error_idx = 0;
+    
+    for i = 1:numel(error_indices)
+        err_idx = error_indices(i);
+        
+        % Define the block of effects associated with this error term
+        block_start = last_error_idx + 1;
+        block_end = err_idx - 1;
+        
+        if block_end >= block_start
+            SS_error = SumSq(err_idx);
+            
+            for j = block_start:block_end
+                SS_effect = SumSq(j);
+                partial_eta_sq(j) = SS_effect / (SS_effect + SS_error);
+            end
+        end
+        
+        last_error_idx = err_idx;
+    end
+    
+    ranova_table.PartialEtaSq = partial_eta_sq;
+    fprintf(' -> Partial Eta Squared added to table.\n');
+catch ME
+    warning('効果量の計算に失敗しました: %s', ME.message);
+end
 
 end

@@ -748,7 +748,7 @@ classdef DataAnalyzer < handle
                 obj
                 dataSpecA (1,1) struct {mustHaveFields(dataSpecA, ["SetName", "TargetData"])}
                 dataSpecB (1,1) struct {mustHaveFields(dataSpecB, ["SetName", "TargetData"])}
-                options.Mode     (1,1) string {mustBeMember(options.Mode, ["H", "HM", "HS", "HMS"])} = "H"
+                options.Mode     (1,1) string {mustBeMember(options.Mode, ["H", "HM", "HS", "HMS", "Total", "S"])} = "H"
                 options.ShowTitle (1,1) logical = true
             end
             
@@ -759,31 +759,64 @@ classdef DataAnalyzer < handle
             dataB = obj.getDataFromSet(dataSpecB.SetName, dataSpecB.TargetData);
             
             % --- 2. 共通の条件（材質・形状）を抽出してデータをアライメント ---
-            [matNamesA, shapeNamesA] = obj.selectNamesFromDataSize(dataA, [], "HMS");
-            [matNamesB, shapeNamesB] = obj.selectNamesFromDataSize(dataB, [], "HMS");
+            % Totalモードの場合は条件抽出は不要（全統合するため）
+            commonMatNames = [];
+            commonShapeNames = [];
             
-            [commonMatNames, iA_mat, iB_mat] = intersect(matNamesA, matNamesB, 'stable');
-            [commonShapeNames, iA_shape, iB_shape] = intersect(shapeNamesA, shapeNamesB, 'stable');
-            
-            % 警告・情報表示
-            if isempty(commonMatNames)
-                warning('共通の材質条件が見つかりませんでした。');
-            elseif length(commonMatNames) < length(matNamesA) || length(commonMatNames) < length(matNamesB)
-                fprintf('  -> 共通の材質条件にデータを制限します: %s\n', strjoin(commonMatNames, ', '));
-            end
-             
-            if isempty(commonShapeNames)
-                warning('共通の形状条件が見つかりませんでした。');
-            elseif length(commonShapeNames) < length(shapeNamesA) || length(commonShapeNames) < length(shapeNamesB)
-                fprintf('  -> 共通の形状条件にデータを制限します: %s\n', strjoin(commonShapeNames, ', '));
-            end
-            
-            % フィルタリング
-            if ndims(dataA) >= 3
-                dataA = dataA(:, iA_mat, iA_shape, :, :);
-            end
-            if ndims(dataB) >= 3
-                dataB = dataB(:, iB_mat, iB_shape, :, :);
+            if options.Mode == "Total"
+                % Totalモード: アライメントは基本不要だが、念のためサイズチェック等はありうる
+                % ここではスキップ
+            else
+                % 名前取得のためのダミーデータ生成 (S, HS用)
+                if options.Mode == "S" || options.Mode == "HS"
+                    % [H, S] のダミーデータを作成して渡す
+                    H_size = size(dataA, 1);
+                    S_size = size(dataA, 3);
+                    dummyData = zeros(H_size, S_size);
+                    [matNamesA, shapeNamesA] = obj.selectNamesFromDataSize(dummyData, [], "HS");
+                    
+                    H_sizeB = size(dataB, 1);
+                    S_sizeB = size(dataB, 3);
+                    dummyDataB = zeros(H_sizeB, S_sizeB);
+                    [matNamesB, shapeNamesB] = obj.selectNamesFromDataSize(dummyDataB, [], "HS");
+                else
+                    [matNamesA, shapeNamesA] = obj.selectNamesFromDataSize(dataA, [], "HMS");
+                    [matNamesB, shapeNamesB] = obj.selectNamesFromDataSize(dataB, [], "HMS");
+                end
+                
+                [commonMatNames, iA_mat, iB_mat] = intersect(matNamesA, matNamesB, 'stable');
+                [commonShapeNames, iA_shape, iB_shape] = intersect(shapeNamesA, shapeNamesB, 'stable');
+                
+                % 警告・情報表示
+                if isempty(commonMatNames) && ~ismember(options.Mode, ["S", "HS"]) % S系はMat関係ない
+                    warning('共通の材質条件が見つかりませんでした。');
+                elseif (length(commonMatNames) < length(matNamesA) || length(commonMatNames) < length(matNamesB)) && ~ismember(options.Mode, ["S", "HS"])
+                    fprintf('  -> 共通の材質条件にデータを制限します: %s\n', strjoin(commonMatNames, ', '));
+                end
+                 
+                if isempty(commonShapeNames)
+                    warning('共通の形状条件が見つかりませんでした。');
+                elseif length(commonShapeNames) < length(shapeNamesA) || length(commonShapeNames) < length(shapeNamesB)
+                    fprintf('  -> 共通の形状条件にデータを制限します: %s\n', strjoin(commonShapeNames, ', '));
+                end
+                
+                % フィルタリング (Total以外)
+                % Row_HMSPT [H, M, S, P, T]
+                if ndims(dataA) >= 3
+                    if ismember(options.Mode, ["HS", "S"])
+                         % S次元のみフィルタリング (Mat次元はそのまま or 無視)
+                         dataA = dataA(:, :, iA_shape, :, :);
+                    else
+                         dataA = dataA(:, iA_mat, iA_shape, :, :);
+                    end
+                end
+                if ndims(dataB) >= 3
+                    if ismember(options.Mode, ["HS", "S"])
+                         dataB = dataB(:, :, iB_shape, :, :);
+                    else
+                         dataB = dataB(:, iB_mat, iB_shape, :, :);
+                    end
+                end
             end
             
             % --- 3. 外部関数呼び出し ---

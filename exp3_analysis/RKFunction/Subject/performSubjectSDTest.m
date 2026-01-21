@@ -42,6 +42,8 @@ function performSubjectSDTest(dataA, dataB, nameA, nameB, plotOptions)
             % Data: [H, P]
             tValues = zeros(H, 1);
             pValues = zeros(H, 1);
+            dfValues = zeros(H, 1);
+            cohenDValues = zeros(H, 1);
             
             for hIdx = 1:H
                 vecA = squeeze(logSDA(hIdx, :)); 
@@ -49,7 +51,11 @@ function performSubjectSDTest(dataA, dataB, nameA, nameB, plotOptions)
                 [~, p, ~, stats] = ttest(vecA, vecB);
                 tValues(hIdx) = stats.tstat;
                 pValues(hIdx) = p;
+                dfValues(hIdx) = stats.df;
+                cohenDValues(hIdx) = mean(vecA - vecB) / std(vecA - vecB);
             end
+            
+            saveStatsCSV(tValues, pValues, dfValues, cohenDValues, nameA, nameB, mode, "All", plotOptions);
             
             titleStr = "All Conditions";
             plotTestResult(tValues, pValues, H, HDRNum, Amp, titleStr, nameA, nameB, mode, plotOptions, numSubjects, showTitle);
@@ -60,6 +66,8 @@ function performSubjectSDTest(dataA, dataB, nameA, nameB, plotOptions)
             for m = 1:M
                 tValues = zeros(H, 1);
                 pValues = zeros(H, 1);
+                dfValues = zeros(H, 1);
+                cohenDValues = zeros(H, 1);
                 matName = string(plotOptions.MatNames(m));
                 
                 for hIdx = 1:H
@@ -68,10 +76,15 @@ function performSubjectSDTest(dataA, dataB, nameA, nameB, plotOptions)
                     [~, p, ~, stats] = ttest(vecA, vecB);
                     tValues(hIdx) = stats.tstat;
                     pValues(hIdx) = p;
+                    dfValues(hIdx) = stats.df;
+                    cohenDValues(hIdx) = mean(vecA - vecB) / std(vecA - vecB);
                 end
                 
+                suffix = mode + "_" + matName;
+                saveStatsCSV(tValues, pValues, dfValues, cohenDValues, nameA, nameB, mode, suffix, plotOptions);
+                
                 titleStr = sprintf("Material: %s", matName);
-                plotTestResult(tValues, pValues, H, HDRNum, Amp, titleStr, nameA, nameB, mode + "_" + matName, plotOptions, numSubjects, showTitle);
+                plotTestResult(tValues, pValues, H, HDRNum, Amp, titleStr, nameA, nameB, suffix, plotOptions, numSubjects, showTitle);
             end
             
         case "HS"
@@ -80,6 +93,8 @@ function performSubjectSDTest(dataA, dataB, nameA, nameB, plotOptions)
              for s = 1:S
                 tValues = zeros(H, 1);
                 pValues = zeros(H, 1);
+                dfValues = zeros(H, 1);
+                cohenDValues = zeros(H, 1);
                 shapeName = string(plotOptions.ShapeNames(s));
                 
                 for hIdx = 1:H
@@ -88,10 +103,15 @@ function performSubjectSDTest(dataA, dataB, nameA, nameB, plotOptions)
                     [~, p, ~, stats] = ttest(vecA, vecB);
                     tValues(hIdx) = stats.tstat;
                     pValues(hIdx) = p;
+                    dfValues(hIdx) = stats.df;
+                    cohenDValues(hIdx) = mean(vecA - vecB) / std(vecA - vecB);
                 end
                 
+                suffix = mode + "_" + shapeName;
+                saveStatsCSV(tValues, pValues, dfValues, cohenDValues, nameA, nameB, mode, suffix, plotOptions);
+                
                 titleStr = sprintf("Shape: %s", shapeName);
-                plotTestResult(tValues, pValues, H, HDRNum, Amp, titleStr, nameA, nameB, mode + "_" + shapeName, plotOptions, numSubjects, showTitle);
+                plotTestResult(tValues, pValues, H, HDRNum, Amp, titleStr, nameA, nameB, suffix, plotOptions, numSubjects, showTitle);
             end
             
         case "HMS"
@@ -104,6 +124,8 @@ function performSubjectSDTest(dataA, dataB, nameA, nameB, plotOptions)
                     shapeName = string(plotOptions.ShapeNames(s));
                     tValues = zeros(H, 1);
                     pValues = zeros(H, 1);
+                    dfValues = zeros(H, 1);
+                    cohenDValues = zeros(H, 1);
                     
                     for hIdx = 1:H
                         vecA = squeeze(logSDA(hIdx, m, s, :));
@@ -111,25 +133,104 @@ function performSubjectSDTest(dataA, dataB, nameA, nameB, plotOptions)
                         [~, p, ~, stats] = ttest(vecA, vecB);
                         tValues(hIdx) = stats.tstat;
                         pValues(hIdx) = p;
+                        dfValues(hIdx) = stats.df;
+                        cohenDValues(hIdx) = mean(vecA - vecB) / std(vecA - vecB);
                     end
                     
-                    titleStr = sprintf("Mat:%s, Shape:%s", matName, shapeName);
+            titleStr = sprintf("Mat:%s, Shape:%s", matName, shapeName);
                     suffix = mode + "_" + matName + "_" + shapeName;
-                    plotTestResult(tValues, pValues, H, HDRNum, Amp, titleStr, nameA, nameB, suffix, plotOptions, numSubjects, showTitle);
+                    
+                    saveStatsCSV(tValues, pValues, dfValues, cohenDValues, nameA, nameB, mode, suffix, plotOptions);
+                    
+                    xLabelStr = "Illumination";
+                    plotTestResult(tValues, pValues, H, HDRNum, Amp, titleStr, nameA, nameB, suffix, plotOptions, numSubjects, showTitle, xLabelStr);
                 end
             end
+            
+        case "Total"
+            % Data: [1, N]
+            tValues = zeros(1, 1);
+            pValues = zeros(1, 1);
+            dfValues = zeros(1, 1);
+            cohenDValues = zeros(1, 1);
+            
+            vecA = squeeze(logSDA(1, :));
+            vecB = squeeze(logSDB(1, :));
+            
+            % 自由度などはttest内で計算
+            [~, p, ~, stats] = ttest(vecA, vecB);
+            tValues(1) = stats.tstat;
+            pValues(1) = p;
+            dfValues(1) = stats.df;
+            cohenDValues(1) = mean(vecA - vecB) / std(vecA - vecB);
+            
+            saveStatsCSV(tValues, pValues, dfValues, cohenDValues, nameA, nameB, mode, "Total", plotOptions);
+            
+            titleStr = "Total (All Conditions Pooled)";
+            xLabelStr = ""; 
+            % Use "Total" as tick label
+            plotTestResult(tValues, pValues, 1, "Total", Amp, titleStr, nameA, nameB, mode, plotOptions, numSubjects, showTitle, xLabelStr);
+
+        case "S"
+            % Data: [S, N]
+            szS = size(logSDA);
+            S = szS(1);
+            
+            tValues = zeros(S, 1);
+            pValues = zeros(S, 1);
+            dfValues = zeros(S, 1);
+            cohenDValues = zeros(S, 1);
+            
+            for s = 1:S
+                vecA = squeeze(logSDA(s, :));
+                vecB = squeeze(logSDB(s, :));
+                [~, p, ~, stats] = ttest(vecA, vecB);
+                tValues(s) = stats.tstat;
+                pValues(s) = p;
+                dfValues(s) = stats.df;
+                cohenDValues(s) = mean(vecA - vecB) / std(vecA - vecB);
+            end
+            
+            saveStatsCSV(tValues, pValues, dfValues, cohenDValues, nameA, nameB, mode, "S", plotOptions);
+            
+            % X軸ラベル用にShapeNamesをセット
+            if isfield(plotOptions, 'ShapeNames')
+                plotOptions.HDRNum = plotOptions.ShapeNames; % XTickLabelsとして利用
+            end
+            
+            titleStr = "Shape Comparison";
+            xLabelStr = "Shape";
+            plotTestResult(tValues, pValues, S, plotOptions.HDRNum, Amp, titleStr, nameA, nameB, mode, plotOptions, numSubjects, showTitle, xLabelStr);
     end
     
     fprintf('----------------------------------------\n\n');
 end
 
-function plotTestResult(tValues, pValues, H, HDRNum, Amp, titleStr, nameA, nameB, suffix, plotOptions, numSubjects, showTitle)
+function saveStatsCSV(tValues, pValues, dfValues, cohenDValues, nameA, nameB, mode, suffix, plotOptions)
+    if isfield(plotOptions, 'ResultDir') && plotOptions.ResultDir ~= ""
+        H = length(tValues);
+        % テーブル作成
+        tbl = table((1:H)', tValues, dfValues, pValues, cohenDValues, ...
+            'VariableNames', {'Index', 't_stat', 'df', 'p_value', 'Cohens_d'});
+        
+        % 丸め処理
+        tbl.t_stat = round(tbl.t_stat, 4);
+        tbl.p_value = round(tbl.p_value, 4);
+        tbl.Cohens_d = round(tbl.Cohens_d, 4);
+
+        csvFileName = sprintf("SubjectSDTest_Stats_%s_vs_%s_%s.csv", nameA, nameB, suffix);
+        writetable(tbl, fullfile(plotOptions.ResultDir, csvFileName));
+        fprintf('Saved stats CSV: %s\n', csvFileName);
+    end
+end
+
+function plotTestResult(tValues, pValues, H, HDRNum, Amp, titleStr, nameA, nameB, suffix, plotOptions, numSubjects, showTitle, xLabelStr)
     % t値のプロット作成
     fig = figure('Visible', 'on'); % 確認用に表示
     
     % t値のバープロット (単一オブジェクトで描画し、色を個別指定する)
     b = bar(tValues, 'FaceColor', 'flat', 'EdgeColor', 'none');
-    b.CData = repmat([0.7, 0.7, 0.7], H, 1); % デフォルト: グレー
+    b.CData = repmat([0.7, 0.7, 0.7], length(tValues), 1); % デフォルト: グレー
     
     hold on;
     
@@ -165,14 +266,19 @@ function plotTestResult(tValues, pValues, H, HDRNum, Amp, titleStr, nameA, nameB
         title(titleVal, 'Interpreter', 'none', 'FontSize', 12 * Amp);
     end
     ylabel('t-value', 'FontSize', 10 * Amp);
-    xlabel('Illumination', 'FontSize', 10 * Amp);
+    if nargin < 13 || isempty(xLabelStr)
+        % Default fallback if not provided (though we update all calls above)
+        % Don't label if empty
+    else
+        xlabel(xLabelStr, 'FontSize', 10 * Amp);
+    end
     
     % X軸設定
     xlim([0.5, H + 0.5]);
     xticks(1:H);
     if ~isempty(HDRNum)
         xticklabels(HDRNum);
-        xtickangle(90);
+        xtickangle(45); % Slightly angled for readability
     end
     
     % 保存

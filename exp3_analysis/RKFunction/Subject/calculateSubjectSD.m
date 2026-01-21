@@ -59,5 +59,28 @@ function sdData = calculateSubjectSD(data, mode, isPooled)
             % [H, M, S, P]
             % 平均化もプールも構造自体は変わらない（非対象次元がないため）
             sdData = trialSDData;
+            
+        case "Total"
+            if isPooled
+                % [H, M, S, P] -> [1, H*M*S*P] (dummy dim as 1st dim)
+                % ttest compatible format: [1, N]
+                sdData = reshape(trialSDData, 1, []);
+            else
+                % [H, M, S, P] -> 平均(H, M, S) -> [1, P]
+                sdData = mean(trialSDData, [1, 2, 3], 'omitnan');
+                sdData = squeeze(sdData)'; % [1, P]
+            end
+
+        case "S"
+            if isPooled
+                % [H, M, S, P] -> [S, H*M*P]
+                % [S, H, M, P] に変形してからreshape
+                tmp = permute(trialSDData, [3, 1, 2, 4]);
+                sdData = reshape(tmp, S, []);
+            else
+                % [H, M, S, P] -> 平均(H, M) -> [S, P]
+                sdData = mean(trialSDData, [1, 2], 'omitnan');
+                sdData = squeeze(sdData); % [S, P]
+            end
     end
 end
