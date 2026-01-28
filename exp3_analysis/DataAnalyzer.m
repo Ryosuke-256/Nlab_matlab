@@ -360,6 +360,7 @@ classdef DataAnalyzer < handle
                 options.ConditionName (1,1) string = "Condition"
                 options.ConditionLevels (1,2) string = ["A", "B"]
                 options.FactorNames (1,:) string = ["Illumination", "Material", "Shape"]
+                options.Property (1,1) string = ""
             end
             
             fprintf('完全反復測定分散分析 (Within-Subject ANOVA) を開始します...\n');
@@ -387,7 +388,8 @@ classdef DataAnalyzer < handle
                 'ConditionName', options.ConditionName, ...
                 'ConditionLevels', condLevels, ...
                 'DataNames', [string(dataSpecA.SetName), string(dataSpecB.SetName)], ...
-                'ResultDir', obj.ResultDir);
+                'ResultDir', obj.ResultDir, ...
+                'Property', options.Property);
             
             fprintf('分析が完了しました。\n');
         end
@@ -649,6 +651,7 @@ classdef DataAnalyzer < handle
                 options.Amp      (1,1) double {mustBeNumeric} = 1.0
                 options.Mode     (1,1) string {mustBeMember(options.Mode, ["H", "HM", "HS", "HMS"])} = "H"
                 options.ShowTitle (1,1) logical = true
+                options.LegendLocation (1,1) string = "bestoutside"
             end
             
             fprintf('被験者SD解析(Single)を開始します...\n');
@@ -682,6 +685,7 @@ classdef DataAnalyzer < handle
                 options.Amp      (1,1) double {mustBeNumeric} = 1.0
                 options.Mode     (1,1) string {mustBeMember(options.Mode, ["H", "HM", "HS", "HMS"])} = "H"
                 options.ShowTitle (1,1) logical = true
+                options.LegendLocation (1,1) string = "bestoutside"
             end
             
             fprintf('被験者SD解析(Compare)を開始します...\n');
@@ -731,6 +735,7 @@ classdef DataAnalyzer < handle
             plotOptions.ShapeNames = commonShapeNames;
             plotOptions.ParticipantsNames = obj.ParticipantsNames_Exp3;
             plotOptions.HDRNum = obj.HDRNum_30;
+            plotOptions.LegendLocation = options.LegendLocation;
             
             % --- 4. 外部関数を呼び出す ---
             generateSubjectSDPlot(plotData, plotOptions, obj.ResultDir);

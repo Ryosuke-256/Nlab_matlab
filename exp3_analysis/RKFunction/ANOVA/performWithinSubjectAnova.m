@@ -24,6 +24,7 @@ arguments
     options.ConditionLevels (1,2) string = ["A", "B"]
     options.DataNames (1,2) string = ["DataA", "DataB"]
     options.ResultDir (1,1) string = ""
+    options.Property (1,1) string = "" 
 end
 
 %% 1. データの整合性チェック
@@ -97,7 +98,7 @@ else
     [grid_outputs{1:numel(grid_vectors)}] = ndgrid(grid_vectors{:});
     sub_table = table();
     for i = 1:numel(options.FactorNames)
-        sub_table.(options.FactorNames(i)) = grid_outputs{i}(:);
+        sub_table.(options.FactorNames(i)) = categorical(grid_outputs{i}(:));
     end
 end
 
@@ -163,12 +164,17 @@ try
 catch ME
     warning('効果量の計算に失敗しました: %s', ME.message);
 end
+
 %% 6. 結果保存 (CSV)
 if options.ResultDir ~= ""
     % ファイル名にデータ名を含める
     nameA = options.DataNames(1);
     nameB = options.DataNames(2);
-    saveFileName = sprintf("PerfectREANOVA_%s_vs_%s_%s.csv", nameA, nameB, options.ConditionName);
+    if options.Property == ""
+        saveFileName = sprintf("PerfectREANOVA_%s_vs_%s_%s.csv", nameA, nameB, options.ConditionName);
+    else
+        saveFileName = sprintf("PerfectREANOVA_%s_vs_%s_%s_%s.csv", nameA, nameB, options.Property, options.ConditionName);
+    end
     
     saveFullPath = fullfile(options.ResultDir, saveFileName);
     

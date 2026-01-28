@@ -50,37 +50,38 @@ sampleDataA = meanDataA; % [H, M, S, P] (dim5 is singleton)
 sampleDataB = meanDataB;
 
 % Modeに応じた整形
-% Modeに応じた整形
-% ユーザー要望により、ターゲット以外の次元は平均せず、全て標本(Samples)の次元に統合する。
-% これによりサンプル数が大幅に増える(M*S*Pなど)。試行(T)は平均済み。
-
+% ユーザー要望により、ターゲット以外の次元は平均し、サンプル次元は被験者(P)のみとする。
+% N = P (自由度 P-1)
 switch options.Mode
     case "H"
-        % [H, M, S, Samples] -> [H, M*S*Samples]
-        % M, S をサンプル次元に統合
+        % [H, M, S, P] -> Mean(M,S) -> [H, 1, P]
+        tmpA = mean(sampleDataA, [2, 3], 'omitnan'); % [H, 1, 1, P]
+        tmpB = mean(sampleDataB, [2, 3], 'omitnan');
         
-        procDataA = reshape(sampleDataA, H, 1, []);
-        procDataB = reshape(sampleDataB, H, 1, []);
+        procDataA = reshape(tmpA, H, 1, []); % [H, 1, P]
+        procDataB = reshape(tmpB, H, 1, []);
         
         numSubConds = 1;
         if isempty(options.SubNames), subNames = "All"; else, subNames = options.SubNames; end
 
     case "HM"
-        % [H, M, S, Samples] -> [H, M, S*Samples]
-        % S をサンプル次元に統合
+        % [H, M, S, P] -> Mean(S) -> [H, M, P]
+        tmpA = mean(sampleDataA, 3, 'omitnan'); % [H, M, 1, P]
+        tmpB = mean(sampleDataB, 3, 'omitnan');
         
-        procDataA = reshape(sampleDataA, H, M, []);
-        procDataB = reshape(sampleDataB, H, M, []);
+        procDataA = reshape(tmpA, H, M, []);
+        procDataB = reshape(tmpB, H, M, []);
         
         numSubConds = size(procDataA, 2);
         subNames = options.SubNames;
 
     case "HS"
-        % [H, M, S, Samples] -> [H, S, M*Samples]
-        % M をサンプル次元に統合するため、まず次元を入れ替える
-        % [H, S, M, Samples]
-        tmpA = permute(sampleDataA, [1, 3, 2, 4]);
-        tmpB = permute(sampleDataB, [1, 3, 2, 4]);
+        % [H, M, S, P] -> Permute[H, S, M, P] -> Mean(M) -> [H, S, P]
+        tmpA_p = permute(sampleDataA, [1, 3, 2, 4]); % [H, S, M, P]
+        tmpB_p = permute(sampleDataB, [1, 3, 2, 4]);
+        
+        tmpA = mean(tmpA_p, 3, 'omitnan'); % [H, S, 1, P]
+        tmpB = mean(tmpB_p, 3, 'omitnan');
         
         procDataA = reshape(tmpA, H, S, []);
         procDataB = reshape(tmpB, H, S, []);
@@ -89,9 +90,8 @@ switch options.Mode
         subNames = options.SubNames;
 
     case "HMS"
-        % [H, M, S, Samples] -> [H, M*S, Samples]
-        % 統合する非対象次元はないが、M*Sを条件次元として展開する
-        
+        % [H, M, S, P] -> [H, M*S, P]
+        % 平均化なし (全条件展開)
         procDataA = reshape(sampleDataA, H, M*S, []);
         procDataB = reshape(sampleDataB, H, M*S, []);
         
@@ -99,11 +99,12 @@ switch options.Mode
         subNames = options.SubNames;
         
     case "Total"
-        % [H, M, S, Samples] -> [1, H*M*S*Samples]
-        % H, M, S 全てをサンプル次元に統合
+        % [H, M, S, P] -> Mean(H,M,S) -> [1, 1, P]
+        tmpA = mean(sampleDataA, [1, 2, 3], 'omitnan'); % [1, 1, 1, P]
+        tmpB = mean(sampleDataB, [1, 2, 3], 'omitnan');
         
-        procDataA = reshape(sampleDataA, 1, 1, []);
-        procDataB = reshape(sampleDataB, 1, 1, []);
+        procDataA = reshape(tmpA, 1, 1, []);
+        procDataB = reshape(tmpB, 1, 1, []);
         
         numSubConds = 1;
         if isempty(options.SubNames), subNames = "Total"; else, subNames = options.SubNames; end
@@ -111,11 +112,12 @@ switch options.Mode
         if options.XLabel == "Illumination Index", options.XLabel = "Total"; end
 
     case "S"
-        % [H, M, S, Samples] -> [S, H*M*Samples]
-        % 横軸をSにする。H, M をサンプル次元に統合。
-        % 次元順序を [S, H, M, Samples] に変更
-        tmpA = permute(sampleDataA, [3, 1, 2, 4]);
-        tmpB = permute(sampleDataB, [3, 1, 2, 4]);
+        % [H, M, S, P] -> Permute[S, H, M, P] -> Mean(H,M) -> [S, 1, P]
+        tmpA_p = permute(sampleDataA, [3, 1, 2, 4]); % [S, H, M, P]
+        tmpB_p = permute(sampleDataB, [3, 1, 2, 4]);
+        
+        tmpA = mean(tmpA_p, [2, 3], 'omitnan'); % [S, 1, 1, P]
+        tmpB = mean(tmpB_p, [2, 3], 'omitnan');
         
         procDataA = reshape(tmpA, S, 1, []);
         procDataB = reshape(tmpB, S, 1, []);

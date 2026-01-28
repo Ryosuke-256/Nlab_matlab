@@ -1,7 +1,7 @@
 function [ranova_table, rm_model] = performMixedAnova(dataA, dataB, options)
 % [説明]
 %   1. データの次元数を動的に認識します。
-%   2. 最後から2番目(被験者)と最後(試行)の次元を、1つの「繰り返し」次元に統合します。
+%   2. 最後(試行)の次元で平均を取り、最後から2番目(被験者)を「繰り返し」次元とします。
 %   3. 残った次元(要因)と、「データソース(A/B)」を要因としてN-way ANOVAを実行します。
 %      被験者・試行間のばらつきが誤差項として扱われます。
 % [INPUTS]
@@ -49,8 +49,8 @@ if isempty(options.FactorNames) || numel(options.FactorNames) ~= num_within_fact
 end
 
 %% 2. データの準備 (変更なし)
-dataA_avg = mean(dataA, num_dims);
-dataB_avg = mean(dataB, num_dims);
+dataA_avg = mean(dataA, num_dims, 'omitnan');
+dataB_avg = mean(dataB, num_dims, 'omitnan');
 dataA_2d = reshape(permute(dataA_avg, [subject_dim, factor_dims]), sizeA(subject_dim), []);
 dataB_2d = reshape(permute(dataB_avg, [subject_dim, factor_dims]), sizeB(subject_dim), []);
 all_data_matrix = [dataA_2d; dataB_2d];
@@ -73,7 +73,7 @@ grid_vectors = arrayfun(@(n) (1:n)', factor_sizes, 'UniformOutput', false);
 [grid_outputs{1:num_within_factors}] = ndgrid(grid_vectors{:});
 within_factor_names = options.FactorNames(1:num_within_factors);
 for i = 1:num_within_factors
-    within_factors_table.(within_factor_names(i)) = grid_outputs{i}(:);
+    within_factors_table.(within_factor_names(i)) = categorical(grid_outputs{i}(:));
 end
 
 model_formula = sprintf('%s-%s ~ %s', measurement_var_names(1), measurement_var_names(end), options.BetweenFactorName);

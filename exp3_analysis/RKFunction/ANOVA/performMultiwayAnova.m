@@ -1,7 +1,7 @@
 function [p_values, anova_table] = performMultiwayAnova(dataA, dataB, options)
 % [説明]
 %   1. データの次元数を動的に認識します。
-%   2. 最後から2番目(被験者)と最後(試行)の次元を、1つの「繰り返し」次元に統合します。
+%   2. 最後(試行)の次元で平均を取り、最後から2番目(被験者)を「繰り返し」次元とします。
 %   3. 残った次元(要因)と、「データソース(A/B)」を要因としてN-way ANOVAを実行します。
 %      被験者・試行間のばらつきが誤差項として扱われます。
 % [INPUTS]
@@ -59,12 +59,16 @@ end
 factor_sizes = sizeA(factor_dims);
 
 % データAの変形
-num_reps_A = size(dataA, num_dims - 1) * size(dataA, num_dims);
-dataA_reshaped = reshape(dataA, [prod(factor_sizes), num_reps_A]);
+% データAの変形 (試行平均)
+dataA_mean = mean(dataA, num_dims, 'omitnan');
+num_reps_A = size(dataA, num_dims - 1);
+% 平均化により最後の次元が1になるので、それを考慮してreshape
+dataA_reshaped = reshape(dataA_mean, [prod(factor_sizes), num_reps_A]);
 
-% データBの変形
-num_reps_B = size(dataB, num_dims - 1) * size(dataB, num_dims);
-dataB_reshaped = reshape(dataB, [prod(factor_sizes), num_reps_B]);
+% データBの変形 (試行平均)
+dataB_mean = mean(dataB, num_dims, 'omitnan');
+num_reps_B = size(dataB, num_dims - 1);
+dataB_reshaped = reshape(dataB_mean, [prod(factor_sizes), num_reps_B]);
 
 
 %% 3. anovan関数用のデータ形式に準備

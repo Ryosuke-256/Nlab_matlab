@@ -35,6 +35,11 @@ function generateSubjectSDPlot(plotData, plotOptions, ResultDir)
     end
     showTitle = plotOptions.ShowTitle;
 
+    if ~isfield(plotOptions, 'LegendLocation')
+        plotOptions.LegendLocation = 'bestoutside';
+    end
+    legendLoc = plotOptions.LegendLocation;
+
     fprintf('被験者間SD解析を実行中: Mode=%s, Compare=%d\n', mode, isCompare);
 
     % SDデータの計算 (共通ロジック: [H, P] or [H, M, P] etc.)
@@ -65,7 +70,7 @@ function generateSubjectSDPlot(plotData, plotOptions, ResultDir)
         case "H"
             % sdData: [H]
             if isCompare
-                plotCompareSD(sdDataA, sdDataB, nameA, nameB, "All Conditions", setName, property, "H", ResultDir, HDRNum, amp, showTitle, pValuesData);
+                plotCompareSD(sdDataA, sdDataB, nameA, nameB, "All Conditions", setName, property, "H", ResultDir, HDRNum, amp, showTitle, pValuesData, legendLoc);
             else
                 plotSingleSD(sdDataA, "All Conditions", setName, property, "H", ResultDir, HDRNum, amp, showTitle);
             end
@@ -84,7 +89,7 @@ function generateSubjectSDPlot(plotData, plotOptions, ResultDir)
                     currentSDB = squeeze(sdDataB(:, m));
                     currentP = [];
                     if ~isempty(pValuesData), currentP = pValuesData(:, m); end
-                    plotCompareSD(currentSDA, currentSDB, nameA, nameB, titleStr, setName, property, suffix, ResultDir, HDRNum, amp, showTitle, currentP);
+                    plotCompareSD(currentSDA, currentSDB, nameA, nameB, titleStr, setName, property, suffix, ResultDir, HDRNum, amp, showTitle, currentP, legendLoc);
                 else
                     % Singleの場合は既存仕様通り、ループ終了後にまとめてプロットする
                     % ここでは何もしない
@@ -93,7 +98,7 @@ function generateSubjectSDPlot(plotData, plotOptions, ResultDir)
 
             % Singleの場合（既存の動作）: 材質ごとに1つのグラフにまとめる
             if ~isCompare
-                plotMultiLineSD(sdDataA, MatNames, "Material Comparison", setName, property, "HM", ResultDir, HDRNum, amp, showTitle);
+                plotMultiLineSD(sdDataA, MatNames, "Material Comparison", setName, property, "HM", ResultDir, HDRNum, amp, showTitle, legendLoc);
             end
 
         case "HS"
@@ -110,11 +115,11 @@ function generateSubjectSDPlot(plotData, plotOptions, ResultDir)
 
                     currentP = [];
                     if ~isempty(pValuesData), currentP = pValuesData(:, s); end
-                    plotCompareSD(currentSDA, currentSDB, nameA, nameB, titleStr, setName, property, suffix, ResultDir, HDRNum, amp, showTitle, currentP);
+                    plotCompareSD(currentSDA, currentSDB, nameA, nameB, titleStr, setName, property, suffix, ResultDir, HDRNum, amp, showTitle, currentP, legendLoc);
                 end
             else
                 % Singleの場合: 形状ごとに1つのグラフにまとめる
-                plotMultiLineSD(sdDataA, ShapeNames, "Shape Comparison", setName, property, "HS", ResultDir, HDRNum, amp, showTitle);
+                plotMultiLineSD(sdDataA, ShapeNames, "Shape Comparison", setName, property, "HS", ResultDir, HDRNum, amp, showTitle, legendLoc);
             end
 
         case "HMS"
@@ -136,7 +141,7 @@ function generateSubjectSDPlot(plotData, plotOptions, ResultDir)
                         currentSDB = squeeze(sdDataB(:, m, s));
                         currentP = [];
                         if ~isempty(pValuesData), currentP = squeeze(pValuesData(:, m, s)); end
-                        plotCompareSD(currentSDA, currentSDB, nameA, nameB, titleStr, setName, property, suffix, ResultDir, HDRNum, amp, showTitle, currentP);
+                        plotCompareSD(currentSDA, currentSDB, nameA, nameB, titleStr, setName, property, suffix, ResultDir, HDRNum, amp, showTitle, currentP, legendLoc);
                     else
                         % Singleの場合は HMS_Material ごとに形状を系列にしてプロット（ループ後に処理）
                     end
@@ -148,7 +153,7 @@ function generateSubjectSDPlot(plotData, plotOptions, ResultDir)
                     % [H, S]
                     suffix = "HMS_" + matName;
                     titleStr = sprintf("Material: %s", matName);
-                    plotMultiLineSD(currentSDA_Mat, ShapeNames, titleStr, setName, property, suffix, ResultDir, HDRNum, amp, showTitle);
+                    plotMultiLineSD(currentSDA_Mat, ShapeNames, titleStr, setName, property, suffix, ResultDir, HDRNum, amp, showTitle, legendLoc);
                 end
             end
     end
@@ -177,7 +182,7 @@ function pValues = runPairwiseTtest(dataA, dataB)
     end
 end
 
-function plotCompareSD(sdDataA, sdDataB, nameA, nameB, titleStr, setName, property, suffix, ResultDir, HDRNum, amp, showTitle, pValues)
+function plotCompareSD(sdDataA, sdDataB, nameA, nameB, titleStr, setName, property, suffix, ResultDir, HDRNum, amp, showTitle, pValues, legendLoc)
     % A vs B の比較プロット(2本線)
     fig = figure('Visible', 'off');
     hold on;
@@ -243,9 +248,9 @@ function plotCompareSD(sdDataA, sdDataB, nameA, nameB, titleStr, setName, proper
     ax = gca;
     currentYLim = ylim(ax);
     ylim(ax, [currentYLim(1), currentYLim(2) * 1.05]); % setupAxesで既に1.1倍されているが、さらに微調整
-
-    legend(handles, labels, 'Location', 'bestoutside', 'Interpreter', 'none', 'FontSize', 10 * amp);
-
+ 
+    legend(handles, labels, 'Location', legendLoc, 'Interpreter', 'none', 'FontSize', 10 * amp);
+ 
     savePlot(fig, setName, property, suffix, ResultDir);
 end
 
@@ -258,7 +263,7 @@ function plotSingleSD(sdData, titleStr, setName, property, suffix, ResultDir, HD
     savePlot(fig, setName, property, suffix, ResultDir);
 end
 
-function plotMultiLineSD(sdData, legendLabels, titleStr, setName, property, suffix, ResultDir, HDRNum, amp, showTitle)
+function plotMultiLineSD(sdData, legendLabels, titleStr, setName, property, suffix, ResultDir, HDRNum, amp, showTitle, legendLoc)
     % 複数系列のプロット(Singleデータ用, カラフル)
     fig = figure('Visible', 'off');
     hold on;
@@ -272,8 +277,8 @@ function plotMultiLineSD(sdData, legendLabels, titleStr, setName, property, suff
     hold off;
 
     setupAxes(gca, titleStr, setName, property, HDRNum, amp, showTitle);
-    legend('Location', 'best', 'Interpreter', 'none', 'FontSize', 10 * amp);
-
+    legend('Location', legendLoc, 'Interpreter', 'none', 'FontSize', 10 * amp);
+ 
     savePlot(fig, setName, property, suffix, ResultDir);
 end
 

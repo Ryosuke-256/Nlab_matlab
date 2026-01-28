@@ -20,9 +20,13 @@ function performSubjectSDTest(dataA, dataB, nameA, nameB, plotOptions)
     fprintf('比較対象: %s vs %s\n', nameA, nameB);
 
     % 1. SDデータの計算 (calculateSubjectSD.m)
-    % isPooled=true: 非対象次元を平均せず標本として扱う
-    sdA = calculateSubjectSD(dataA, mode, true);
-    sdB = calculateSubjectSD(dataB, mode, true);
+    % isPooled=false: 非対象次元を平均して被験者次元のみを標本として扱う
+    sdA = calculateSubjectSD(dataA, mode, false);
+    sdB = calculateSubjectSD(dataB, mode, false);
+    
+    % 0 (or negative) -> NaN to avoid -Inf in log
+    sdA(sdA <= 0) = NaN;
+    sdB(sdB <= 0) = NaN;
     
     % 2. 対数変換 (log SD)
     logSDA = log(sdA);
@@ -52,7 +56,7 @@ function performSubjectSDTest(dataA, dataB, nameA, nameB, plotOptions)
                 tValues(hIdx) = stats.tstat;
                 pValues(hIdx) = p;
                 dfValues(hIdx) = stats.df;
-                cohenDValues(hIdx) = mean(vecA - vecB) / std(vecA - vecB);
+                cohenDValues(hIdx) = mean(vecA - vecB, 'omitnan') / std(vecA - vecB, 'omitnan');
             end
             
             saveStatsCSV(tValues, pValues, dfValues, cohenDValues, nameA, nameB, mode, "All", plotOptions);
@@ -77,7 +81,7 @@ function performSubjectSDTest(dataA, dataB, nameA, nameB, plotOptions)
                     tValues(hIdx) = stats.tstat;
                     pValues(hIdx) = p;
                     dfValues(hIdx) = stats.df;
-                    cohenDValues(hIdx) = mean(vecA - vecB) / std(vecA - vecB);
+                    cohenDValues(hIdx) = mean(vecA - vecB, 'omitnan') / std(vecA - vecB, 'omitnan');
                 end
                 
                 suffix = mode + "_" + matName;
@@ -104,7 +108,7 @@ function performSubjectSDTest(dataA, dataB, nameA, nameB, plotOptions)
                     tValues(hIdx) = stats.tstat;
                     pValues(hIdx) = p;
                     dfValues(hIdx) = stats.df;
-                    cohenDValues(hIdx) = mean(vecA - vecB) / std(vecA - vecB);
+                    cohenDValues(hIdx) = mean(vecA - vecB, 'omitnan') / std(vecA - vecB, 'omitnan');
                 end
                 
                 suffix = mode + "_" + shapeName;
@@ -134,7 +138,7 @@ function performSubjectSDTest(dataA, dataB, nameA, nameB, plotOptions)
                         tValues(hIdx) = stats.tstat;
                         pValues(hIdx) = p;
                         dfValues(hIdx) = stats.df;
-                        cohenDValues(hIdx) = mean(vecA - vecB) / std(vecA - vecB);
+                        cohenDValues(hIdx) = mean(vecA - vecB, 'omitnan') / std(vecA - vecB, 'omitnan');
                     end
                     
             titleStr = sprintf("Mat:%s, Shape:%s", matName, shapeName);
@@ -162,7 +166,7 @@ function performSubjectSDTest(dataA, dataB, nameA, nameB, plotOptions)
             tValues(1) = stats.tstat;
             pValues(1) = p;
             dfValues(1) = stats.df;
-            cohenDValues(1) = mean(vecA - vecB) / std(vecA - vecB);
+            cohenDValues(1) = mean(vecA - vecB, 'omitnan') / std(vecA - vecB, 'omitnan');
             
             saveStatsCSV(tValues, pValues, dfValues, cohenDValues, nameA, nameB, mode, "Total", plotOptions);
             
@@ -188,7 +192,7 @@ function performSubjectSDTest(dataA, dataB, nameA, nameB, plotOptions)
                 tValues(s) = stats.tstat;
                 pValues(s) = p;
                 dfValues(s) = stats.df;
-                cohenDValues(s) = mean(vecA - vecB) / std(vecA - vecB);
+                cohenDValues(s) = mean(vecA - vecB, 'omitnan') / std(vecA - vecB, 'omitnan');
             end
             
             saveStatsCSV(tValues, pValues, dfValues, cohenDValues, nameA, nameB, mode, "S", plotOptions);
