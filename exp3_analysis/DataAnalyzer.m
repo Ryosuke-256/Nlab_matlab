@@ -151,6 +151,53 @@ classdef DataAnalyzer < handle
         end
         
         
+        %% --- Single Histgram ---
+        function SingleHistgram(obj, dataSpecA, options)            
+            % ■ 入力:
+            %   dataSpecA (struct): データセットAの仕様
+            %     - SetName:     DataSetsのキー名 (e.g., "Set-A")
+            %     - TargetData:  主データ名 (e.g., "ZsHM")
+            %     - ErrorData:   エラーデータ名 (e.g., "error_ZsHM")
+            %
+            %   options (名前/値ペア):
+            %     - "Property" (string): 解析対象のプロパティ名 (グラフタイトル用, e.g., "反射率")
+            %     - "HdrSet"   (string): 使用するHDR定数セットの名前 (e.g., "HDRNum_30")
+            %     - "Amp"      (double): 増幅係数 (デフォルト: 1.5)
+            %     - "Mode"     (string): H、HM、HS、HMS
+
+            arguments
+                obj
+                dataSpecA (1,1) struct {mustHaveFields(dataSpecA, ["SetName", "TargetData", "ErrorData"])}
+                options.Property (1,1) string = "GRI"
+                options.HdrSet   (1,1) string {mustBeMember(options.HdrSet, ["HDRNum_15", "HDRNum_30"])} = "HDRNum_30"
+                options.Amp      (1,1) double {mustBeNumeric} = 1.0
+                options.Mode     (1,1) string {mustBeMember(options.Mode, ["H", "HM", "HS", "HMS"])} = "H"
+                options.ShowTitle (1,1) logical = true
+                options.ShowLegend (1,1) logical = true
+            end
+
+            fprintf('ヒストグラム(Single)の作成を開始します...\n');
+
+            % --- 1. データの準備 ---
+            % 描画に必要なデータを構造体にまとめる
+            plotDataA.target = obj.getDataFromSet(dataSpecA.SetName, dataSpecA.TargetData);
+            plotDataA.error  = obj.getDataFromSet(dataSpecA.SetName, dataSpecA.ErrorData);
+            plotDataA.Name = dataSpecA.SetName;
+            
+            % 描画オプションを構造体にまとめる
+            plotOptions = options;
+            plotOptions.NameA = plotDataA.Name;
+            plotOptions.hdr = obj.(options.HdrSet);
+            plotOptions.Title = sprintf('%s about %s', plotDataA.Name, plotOptions.Property);
+            plotOptions.ResultDir = obj.ResultDir;
+            [plotOptions.MatNames, plotOptions.ShapeNames] = obj.selectNamesFromDataSize(plotDataA.target, [], plotOptions.Mode);
+
+            % --- 2. 統合されたヘルパー関数を呼び出す ---
+            performSingleHistgram(plotDataA, plotOptions);
+
+            fprintf('プロットの作成が完了しました。\n');
+        end
+        
         %% --- Histgram ---
         function HistgramCompare(obj, dataSpecA, dataSpecB, options)            
             % ■ 入力:
